@@ -1,26 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500&display=swap');
+
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --edel-red: #A91E22;
+  --edel-red-dark: #8B1619;
+  --edel-red-dim: rgba(169, 30, 34, 0.08);
+  --edel-bg: #080A0B;
+  --edel-bg-2: #0A0C0D;
+  --edel-bg-3: #0E1012;
+  --edel-bg-4: #131518;
+  --edel-border: rgba(255, 255, 255, 0.06);
+  --edel-border-mid: rgba(255, 255, 255, 0.1);
+  --edel-text: #E8E8E8;
+  --edel-text-mid: #888;
+  --edel-text-dim: #444;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--edel-bg);
+  color: var(--edel-text);
+  font-family: 'Barlow', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
