@@ -6,15 +6,15 @@
   --edel-red: #A91E22;
   --edel-red-dark: #8B1619;
   --edel-red-dim: rgba(169, 30, 34, 0.08);
-  --edel-bg: #080A0B;
-  --edel-bg-2: #0A0C0D;
-  --edel-bg-3: #0E1012;
-  --edel-bg-4: #131518;
-  --edel-border: rgba(255, 255, 255, 0.06);
-  --edel-border-mid: rgba(255, 255, 255, 0.1);
-  --edel-text: #E8E8E8;
-  --edel-text-mid: #888;
-  --edel-text-dim: #444;
+  --edel-bg: #111316;
+  --edel-bg-2: #161A1D;
+  --edel-bg-3: #1A1E22;
+  --edel-bg-4: #1E2226;
+  --edel-border: rgba(255, 255, 255, 0.10);
+  --edel-border-mid: rgba(255, 255, 255, 0.15);
+  --edel-text: #F0F0F0;
+  --edel-text-mid: #AAAAAA;
+  --edel-text-dim: #666666;
 }
 
 * {
@@ -35,4 +35,31 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+/* Lighten all inputs and selects */
+input, select, textarea {
+  background: #1E2226 !important;
+  color: #F0F0F0 !important;
+  border: 0.5px solid rgba(255,255,255,0.12) !important;
+}
+
+input::placeholder {
+  color: #555 !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #161A1D;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A91E22;
 }

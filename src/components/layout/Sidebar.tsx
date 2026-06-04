@@ -4,7 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, ClipboardList, Plus, Clock,
-  Boxes, List, Package, Building2, Users, BarChart2, Settings,
+  Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
+  Briefcase, FileCheck, Calendar, Bell,
 } from "lucide-react"
 
 const nav = [
@@ -15,6 +16,13 @@ const nav = [
     { label: "All Orders", href: "/orders", icon: ClipboardList, badge: 14 },
     { label: "New Order", href: "/orders/new", icon: Plus },
     { label: "Pending Review", href: "/orders/pending", icon: Clock, badge: 3 },
+    { label: "Drafts", href: "/orders/drafts", icon: FileText },
+  ]},
+  { section: "Operations", items: [
+    { label: "PO Tracker", href: "/operations/pos", icon: Briefcase },
+    { label: "Invoices", href: "/operations/invoices", icon: FileCheck },
+    { label: "Calendar", href: "/operations/calendar", icon: Calendar },
+    { label: "Alerts", href: "/operations/alerts", icon: Bell },
   ]},
   { section: "Catalog", items: [
     { label: "Products", href: "/inventory/products", icon: Boxes },
@@ -35,7 +43,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   return (
     <aside style={{
-      background: "#0A0C0D",
+      background: "#161A1D",
       borderRight: "0.5px solid rgba(255,255,255,0.06)",
       width: "210px",
       minHeight: "100%",
