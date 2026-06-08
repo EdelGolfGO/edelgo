@@ -4,7 +4,7 @@ import Sidebar from "@/components/layout/Sidebar"
 import Topbar from "@/components/layout/Topbar"
 
 export const metadata: Metadata = {
-  title: "EdelGo | Dealer Portal",
+  title: "EdelFit | Dealer Portal",
   description: "Edel Golf B2B Ordering Platform",
 }
 

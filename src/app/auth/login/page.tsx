@@ -67,7 +67,7 @@ export default function LoginPage() {
               textTransform: "uppercase",
               color: "#fff",
               lineHeight: 1,
-            }}>EdelGo</div>
+            }}>EdelFit</div>
           </div>
         </div>
 

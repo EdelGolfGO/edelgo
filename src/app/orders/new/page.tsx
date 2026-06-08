@@ -107,7 +107,7 @@ export default function NewOrderPage() {
     }))
   }
 
-  function addToOrder(product: typeof CATALOG["Built Clubs"][0]) {
+  function addToOrder(product: any) {
     const opts = getOptions(product.id)
     const optionKeys = Object.keys(product.options)
     const missingOptions = optionKeys.filter(k => !opts[k])

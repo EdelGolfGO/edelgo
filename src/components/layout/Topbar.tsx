@@ -53,7 +53,7 @@ export default function Topbar() {
             fontWeight: 800,
             color: "#fff",
           }}>EG</div>
-          EdelGo
+          EdelFit
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
@@ -190,7 +190,7 @@ export default function Topbar() {
               fontSize: "20px", fontWeight: 700,
               textTransform: "uppercase", letterSpacing: "0.06em",
               color: "#fff", margin: "0 0 8px",
-            }}>Sign Out of EdelGo?</h2>
+            }}>Sign Out of EdelFit?</h2>
             <p style={{
               fontSize: "13px", color: "#666",
               fontFamily: "'Barlow', sans-serif",

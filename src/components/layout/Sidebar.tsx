@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
-  Briefcase, FileCheck, Calendar, Bell,
+  Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch,
 } from "lucide-react"
 
 const nav = [
@@ -13,9 +13,9 @@ const nav = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   ]},
   { section: "Orders", items: [
-    { label: "All Orders", href: "/orders", icon: ClipboardList, badge: 14 },
+    { label: "All Orders", href: "/orders", icon: ClipboardList, badge: 0 },
     { label: "New Order", href: "/orders/new", icon: Plus },
-    { label: "Pending Review", href: "/orders/pending", icon: Clock, badge: 3 },
+    { label: "Pending Review", href: "/orders/pending", icon: Clock, badge: 0 },
     { label: "Drafts", href: "/orders/drafts", icon: FileText },
   ]},
   { section: "Operations", items: [
@@ -24,10 +24,12 @@ const nav = [
     { label: "Calendar", href: "/operations/calendar", icon: Calendar },
     { label: "Alerts", href: "/operations/alerts", icon: Bell },
   ]},
-  { section: "Catalog", items: [
+  { section: "Inventory", items: [
+    { label: "Stock Levels", href: "/inventory", icon: Package },
+    { label: "Forecast / Reorder", href: "/inventory/forecast", icon: TrendingDown },
+    { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
+    { label: "SKUs", href: "/inventory/skus", icon: List },
     { label: "Products", href: "/inventory/products", icon: Boxes },
-    { label: "SKUs & BoMs", href: "/skus", icon: List },
-    { label: "Inventory", href: "/inventory", icon: Package },
   ]},
   { section: "Accounts", items: [
     { label: "Dealers", href: "/dealers", icon: Building2 },
@@ -49,6 +51,7 @@ export default function Sidebar() {
       minHeight: "100%",
       flexShrink: 0,
       paddingTop: "12px",
+      overflowY: "auto",
     }}>
       {nav.map((group) => (
         <div key={group.section}>
@@ -61,7 +64,7 @@ export default function Sidebar() {
             margin: 0,
           }}>{group.section}</p>
           {group.items.map((item) => {
-            const active = pathname === item.href
+            const active = pathname === item.href || pathname.startsWith(item.href + "/")
             const Icon = item.icon
             return (
               <Link key={item.href} href={item.href} style={{
@@ -76,7 +79,7 @@ export default function Sidebar() {
               }}>
                 <Icon size={15} />
                 <span style={{ flex: 1 }}>{item.label}</span>
-                {item.badge && (
+                {item.badge !== undefined && item.badge > 0 && (
                   <span style={{
                     background: "#A91E22", color: "#fff",
                     fontSize: "9px", fontWeight: 700,
