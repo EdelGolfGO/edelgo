@@ -13,7 +13,7 @@ const nav = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   ]},
   { section: "Orders", items: [
-    { label: "All Orders", href: "/orders", icon: ClipboardList, badge: 0 },
+    { label: "All Orders", href: "/orders/all", icon: ClipboardList, badge: 0 },
     { label: "New Order", href: "/orders/new", icon: Plus },
     { label: "Pending Review", href: "/orders/pending", icon: Clock, badge: 0 },
     { label: "Drafts", href: "/orders/drafts", icon: FileText },
