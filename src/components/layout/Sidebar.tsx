@@ -1,11 +1,12 @@
 "use client"
 
+
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
-  Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch,
+  Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch,Upload
 } from "lucide-react"
 
 const nav = [
@@ -30,6 +31,7 @@ const nav = [
     { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
     { label: "SKUs", href: "/inventory/skus", icon: List },
     { label: "Products", href: "/inventory/products", icon: Boxes },
+    { label: "Shopify Import", href: "/inventory/import", icon: Upload },
   ]},
   { section: "Accounts", items: [
     { label: "Dealers", href: "/dealers", icon: Building2 },
