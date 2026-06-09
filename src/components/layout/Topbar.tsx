@@ -31,29 +31,13 @@ export default function Topbar() {
         position: "relative",
         zIndex: 50,
       }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: "22px",
-          fontWeight: 800,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "#fff",
-        }}>
-          <div style={{
-            width: "28px",
-            height: "28px",
-            background: "#A91E22",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "12px",
-            fontWeight: 800,
-            color: "#fff",
-          }}>EG</div>
-          EdelFit
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => router.push("/dashboard")}>
+          <img
+            src="/edelfit-logo.png"
+            alt="EdelFit"
+            style={{ height: "36px", width: "auto", filter: "invert(1) brightness(2)" }}
+          />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
@@ -88,14 +72,13 @@ export default function Topbar() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: "10px", fontWeight: 700, color: "#fff",
                 fontFamily: "'Barlow Condensed', sans-serif",
-              }}>JW</div>
+              }}>EF</div>
               <ChevronDown size={12} color="#666" style={{
                 transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
                 transition: "transform 0.15s",
               }} />
             </div>
 
-            {/* Dropdown */}
             {dropdownOpen && (
               <div style={{
                 position: "absolute", top: "calc(100% + 8px)", right: 0,
@@ -105,7 +88,6 @@ export default function Topbar() {
                 minWidth: "200px",
                 zIndex: 100,
               }}>
-                {/* User info */}
                 <div style={{
                   padding: "14px 16px",
                   borderBottom: "0.5px solid rgba(255,255,255,0.06)",
@@ -114,14 +96,13 @@ export default function Topbar() {
                     fontFamily: "'Barlow Condensed', sans-serif",
                     fontSize: "13px", fontWeight: 700,
                     color: "#fff", margin: 0, letterSpacing: "0.04em",
-                  }}>Josh W.</p>
+                  }}>EdelFit Admin</p>
                   <p style={{
                     fontSize: "11px", color: "#444",
                     margin: "2px 0 0", fontFamily: "'Barlow', sans-serif",
                   }}>Administrator</p>
                 </div>
 
-                {/* Menu items */}
                 {[
                   { icon: User, label: "My Profile", action: () => {} },
                   { icon: Settings, label: "Settings", action: () => { router.push("/settings"); setDropdownOpen(false) } },
@@ -144,7 +125,6 @@ export default function Topbar() {
                   </div>
                 ))}
 
-                {/* Sign out */}
                 <div
                   onClick={() => { setDropdownOpen(false); setSignOutModal(true) }}
                   style={{
@@ -185,12 +165,15 @@ export default function Topbar() {
             }}
             onClick={e => e.stopPropagation()}
           >
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+              <img src="/edelfit-logo.png" alt="EdelFit" style={{ height: "24px", width: "auto", filter: "invert(1)" }} />
+            </div>
             <h2 style={{
               fontFamily: "'Barlow Condensed', sans-serif",
               fontSize: "20px", fontWeight: 700,
               textTransform: "uppercase", letterSpacing: "0.06em",
               color: "#fff", margin: "0 0 8px",
-            }}>Sign Out of EdelFit?</h2>
+            }}>Sign Out?</h2>
             <p style={{
               fontSize: "13px", color: "#666",
               fontFamily: "'Barlow', sans-serif",
