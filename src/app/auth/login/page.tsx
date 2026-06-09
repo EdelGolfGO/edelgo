@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, ChevronDown } from "lucide-react"
 
 const ADMIN_EMAILS = [
   'gjones@edelgolf.com',
@@ -28,16 +28,30 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState("")
 
   // Signup state
-  const [signupEmail, setSignupEmail] = useState("")
-  const [signupPassword, setSignupPassword] = useState("")
-  const [signupConfirm, setSignupConfirm] = useState("")
-  const [signupName, setSignupName] = useState("")
-  const [signupCompany, setSignupCompany] = useState("")
-  const [showSignupPassword, setShowSignupPassword] = useState(false)
-  const [showSignupConfirm, setShowSignupConfirm] = useState(false)
+  const [signupForm, setSignupForm] = useState({
+    full_name: "",
+    company: "",
+    email: "",
+    phone: "",
+    address_line1: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "US",
+    dealer_type: "wholesale",
+    password: "",
+    confirm_password: "",
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [signupLoading, setSignupLoading] = useState(false)
   const [signupError, setSignupError] = useState("")
   const [signupDone, setSignupDone] = useState(false)
+  const [step, setStep] = useState(1) // 2-step signup
+
+  function updateSignup(key: string, value: string) {
+    setSignupForm(f => ({ ...f, [key]: value }))
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -51,11 +65,10 @@ export default function LoginPage() {
 
     if (error) {
       if (error.message.includes("Invalid login credentials")) {
-        // Check if this is an admin email with no account yet
         if (ADMIN_EMAILS.includes(loginEmail.toLowerCase())) {
-          setLoginError("This email is registered as an EdelFit admin. Please check your email for an invitation to set your password.")
+          setLoginError("This is an EdelFit admin account. Please check your email for an invitation to set your password.")
         } else {
-          setLoginError("Incorrect email or password. If you don't have an account, use the Sign Up tab.")
+          setLoginError("Incorrect email or password. Don't have an account? Use the Request Access tab.")
         }
       } else if (error.message.includes("Email not confirmed")) {
         setLoginError("Please check your email and confirm your account before logging in.")
@@ -67,80 +80,79 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // Check if admin email
       if (ADMIN_EMAILS.includes(data.user.email || "")) {
         router.push("/dashboard")
       } else {
-        // Check approval status
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_approved, role")
-          .eq("id", data.user.id)
-          .single()
-
-        if (profile?.is_approved) {
-          router.push("/portal")
-        } else {
-          router.push("/portal/pending")
-        }
+        const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", data.user.id).single()
+        router.push(profile?.is_approved ? "/portal" : "/portal/pending")
       }
     }
     setLoginLoading(false)
   }
 
+  function handleNextStep(e: React.FormEvent) {
+    e.preventDefault()
+    setSignupError("")
+    if (!signupForm.full_name.trim()) { setSignupError("Please enter your name."); return }
+    if (!signupForm.email.trim()) { setSignupError("Please enter your email."); return }
+    if (ADMIN_EMAILS.includes(signupForm.email.toLowerCase())) {
+      setSignupError("This email is registered as an EdelFit admin. Please use the Sign In tab.")
+      return
+    }
+    setStep(2)
+  }
+
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setSignupError("")
-
-    // Validation
-    if (!signupName.trim()) { setSignupError("Please enter your name."); return }
-    if (!signupEmail.trim()) { setSignupError("Please enter your email."); return }
-    if (ADMIN_EMAILS.includes(signupEmail.toLowerCase())) {
-      setSignupError("This email is registered as an EdelFit admin. Please use the login tab.")
-      return
-    }
-    if (signupPassword.length < 8) { setSignupError("Password must be at least 8 characters."); return }
-    if (signupPassword !== signupConfirm) { setSignupError("Passwords do not match."); return }
+    if (signupForm.password.length < 8) { setSignupError("Password must be at least 8 characters."); return }
+    if (signupForm.password !== signupForm.confirm_password) { setSignupError("Passwords do not match."); return }
 
     setSignupLoading(true)
 
     const { data, error } = await supabase.auth.signUp({
-      email: signupEmail,
-      password: signupPassword,
+      email: signupForm.email,
+      password: signupForm.password,
       options: {
         data: {
-          full_name: signupName,
-          company: signupCompany,
+          full_name: signupForm.full_name,
+          company: signupForm.company,
           role: "dealer",
         }
       }
     })
 
     if (error) {
-      if (error.message.includes("already registered")) {
-        setSignupError("An account with this email already exists. Please use the login tab.")
-      } else {
-        setSignupError(error.message)
-      }
+      setSignupError(error.message.includes("already registered") ? "An account with this email already exists. Please sign in." : error.message)
       setSignupLoading(false)
       return
     }
 
     if (data.user) {
-      // Create profile
-      await supabase.from("profiles").upsert({
-        id: data.user.id,
-        email: signupEmail,
-        full_name: signupName,
+      // Wait for DB trigger to create the profile first
+      await new Promise(resolve => setTimeout(resolve, 600))
+
+      // Update profile with all dealer info
+      await supabase.from("profiles").update({
+        email: signupForm.email,
+        full_name: signupForm.full_name,
         role: "dealer",
         is_approved: false,
-      }, { onConflict: "id" })
+        company: signupForm.company,
+        phone: signupForm.phone,
+        address_line1: signupForm.address_line1,
+        city: signupForm.city,
+        state: signupForm.state,
+        zip: signupForm.zip,
+        country: signupForm.country,
+        dealer_type: signupForm.dealer_type,
+      }).eq("id", data.user.id)
 
-      // Create admin notification
+      // Admin notification
       await supabase.from("portal_notifications").insert({
         type: "new_dealer_signup",
-        title: `New Dealer Signup: ${signupName}`,
-        message: `${signupName}${signupCompany ? ` from ${signupCompany}` : ""} (${signupEmail}) has requested access. Please review and approve their account.`,
+        title: `New Dealer Signup: ${signupForm.full_name}`,
+        message: `${signupForm.full_name}${signupForm.company ? ` from ${signupForm.company}` : ""} (${signupForm.email}) has requested access. ${signupForm.city ? `Located in ${signupForm.city}, ${signupForm.state}.` : ""}`,
       })
     }
 
@@ -149,76 +161,33 @@ export default function LoginPage() {
   }
 
   const inputStyle = {
-    width: "100%",
-    background: "#13161A",
-    border: "0.5px solid rgba(255,255,255,0.12)",
-    color: "#fff",
-    padding: "11px 14px",
-    fontSize: "14px",
-    fontFamily: "'Barlow', sans-serif",
-    outline: "none",
-    boxSizing: "border-box" as const,
+    width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)",
+    color: "#fff", padding: "11px 14px", fontSize: "14px",
+    fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const,
   }
-
   const labelStyle = {
-    display: "block" as const,
-    fontFamily: "'Barlow Condensed', sans-serif",
-    fontSize: "10px",
-    fontWeight: 700,
-    letterSpacing: "0.14em",
-    textTransform: "uppercase" as const,
-    color: "#555",
-    marginBottom: "6px",
+    display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif",
+    fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em",
+    textTransform: "uppercase" as const, color: "#555", marginBottom: "6px",
   }
+  const smallInputStyle = { ...inputStyle, padding: "9px 12px", fontSize: "13px" }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#0D0F10",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px",
-    }}>
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+    <div style={{ minHeight: "100vh", background: "#0D0F10", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+      <div style={{ width: "100%", maxWidth: "480px" }}>
 
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <img
-            src="/edelfit-logo.png"
-            alt="EdelFit"
-            style={{ height: "36px", width: "auto", filter: "invert(1)" }}
-          />
-          <p style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: "11px", fontWeight: 600,
-            letterSpacing: "0.2em", textTransform: "uppercase",
-            color: "#333", marginTop: "10px",
-          }}>Operations + Dealer Portal</p>
+        <div style={{ textAlign: "center", marginBottom: "36px" }}>
+          <img src="/edelfit-logo.png" alt="EdelFit" style={{ height: "36px", width: "auto", filter: "invert(1)" }} />
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#333", marginTop: "10px" }}>Operations + Dealer Portal</p>
         </div>
 
-        {/* Card */}
-        <div style={{
-          background: "#1E2226",
-          border: "0.5px solid rgba(255,255,255,0.08)",
-          borderTop: "2px solid #A91E22",
-        }}>
+        <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22" }}>
 
           {/* Tabs */}
           <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
             {(["login", "signup"] as const).map(t => (
-              <button key={t} onClick={() => { setTab(t); setLoginError(""); setSignupError("") }} style={{
-                flex: 1,
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: "12px", fontWeight: 700,
-                letterSpacing: "0.12em", textTransform: "uppercase",
-                padding: "14px",
-                cursor: "pointer", border: "none",
-                background: "transparent",
-                color: tab === t ? "#fff" : "#444",
-                borderBottom: tab === t ? "2px solid #A91E22" : "2px solid transparent",
-                marginBottom: "-1px",
-              }}>
+              <button key={t} onClick={() => { setTab(t); setLoginError(""); setSignupError(""); setStep(1) }} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", padding: "14px", cursor: "pointer", border: "none", background: "transparent", color: tab === t ? "#fff" : "#444", borderBottom: tab === t ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
                 {t === "login" ? "Sign In" : "Request Access"}
               </button>
             ))}
@@ -226,113 +195,119 @@ export default function LoginPage() {
 
           <div style={{ padding: "28px" }}>
 
-            {/* LOGIN TAB */}
+            {/* LOGIN */}
             {tab === "login" && (
               <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
                   <label style={labelStyle}>Email Address</label>
-                  <input
-                    type="email"
-                    style={inputStyle}
-                    placeholder="you@edelgolf.com"
-                    value={loginEmail}
-                    onChange={e => setLoginEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                  />
+                  <input type="email" style={inputStyle} placeholder="you@company.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required autoComplete="email" />
                 </div>
-
                 <div>
                   <label style={labelStyle}>Password</label>
                   <div style={{ position: "relative" }}>
-                    <input
-                      type={showLoginPassword ? "text" : "password"}
-                      style={{ ...inputStyle, paddingRight: "44px" }}
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={e => setLoginPassword(e.target.value)}
-                      required
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: "0" }}
-                    >
+                    <input type={showLoginPassword ? "text" : "password"} style={{ ...inputStyle, paddingRight: "44px" }} placeholder="••••••••" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required autoComplete="current-password" />
+                    <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: 0 }}>
                       {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
-
-                {loginError && (
-                  <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", lineHeight: "1.5" }}>
-                    {loginError}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loginLoading}
-                  style={{
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: "13px", fontWeight: 700,
-                    letterSpacing: "0.12em", textTransform: "uppercase",
-                    color: "#fff",
-                    background: loginLoading ? "#333" : "#A91E22",
-                    border: "none", padding: "13px",
-                    cursor: loginLoading ? "not-allowed" : "pointer",
-                    marginTop: "4px",
-                  }}
-                >
+                {loginError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", lineHeight: "1.5" }}>{loginError}</div>}
+                <button type="submit" disabled={loginLoading} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: loginLoading ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: loginLoading ? "not-allowed" : "pointer", marginTop: "4px" }}>
                   {loginLoading ? "Signing in..." : "Sign In →"}
                 </button>
-
                 <p style={{ fontSize: "11px", color: "#333", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
-                  Don't have an account?{" "}
-                  <span onClick={() => setTab("signup")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>
-                    Request access
-                  </span>
+                  Don't have an account? <span onClick={() => setTab("signup")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>Request access</span>
                 </p>
               </form>
             )}
 
-            {/* SIGNUP TAB */}
-            {tab === "signup" && !signupDone && (
-              <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+            {/* SIGNUP — Step 1: Contact + Company Info */}
+            {tab === "signup" && !signupDone && step === 1 && (
+              <form onSubmit={handleNextStep} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 <p style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px", lineHeight: "1.5" }}>
-                  Create a dealer account to access the Edel Golf ordering portal. Accounts are reviewed and approved by our team.
+                  Create a dealer account to access the Edel Golf ordering portal. Tell us about yourself and your business.
                 </p>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: "4px 0 -4px" }}>Contact Info</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   <div>
                     <label style={labelStyle}>Your Name *</label>
-                    <input style={inputStyle} placeholder="John Smith" value={signupName} onChange={e => setSignupName(e.target.value)} required />
+                    <input style={smallInputStyle} placeholder="John Smith" value={signupForm.full_name} onChange={e => updateSignup("full_name", e.target.value)} required />
                   </div>
                   <div>
-                    <label style={labelStyle}>Company</label>
-                    <input style={inputStyle} placeholder="Golf Galaxy" value={signupCompany} onChange={e => setSignupCompany(e.target.value)} />
+                    <label style={labelStyle}>Phone</label>
+                    <input style={smallInputStyle} placeholder="303-555-0100" value={signupForm.phone} onChange={e => updateSignup("phone", e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Email Address *</label>
+                  <input type="email" style={smallInputStyle} placeholder="john@company.com" value={signupForm.email} onChange={e => updateSignup("email", e.target.value)} required />
+                </div>
+
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: "4px 0 -4px" }}>Business Info</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={labelStyle}>Company Name</label>
+                    <input style={smallInputStyle} placeholder="Golf Galaxy Denver" value={signupForm.company} onChange={e => updateSignup("company", e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Business Type</label>
+                    <select style={{ ...smallInputStyle, cursor: "pointer" }} value={signupForm.dealer_type} onChange={e => updateSignup("dealer_type", e.target.value)}>
+                      <option value="wholesale">Wholesale / Retail</option>
+                      <option value="fitter">Club Fitter</option>
+                      <option value="distributor">Distributor</option>
+                      <option value="international">International</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Business Address</label>
+                  <input style={smallInputStyle} placeholder="123 Main St" value={signupForm.address_line1} onChange={e => updateSignup("address_line1", e.target.value)} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={labelStyle}>City</label>
+                    <input style={smallInputStyle} placeholder="Denver" value={signupForm.city} onChange={e => updateSignup("city", e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>State</label>
+                    <input style={smallInputStyle} placeholder="CO" value={signupForm.state} onChange={e => updateSignup("state", e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>ZIP</label>
+                    <input style={smallInputStyle} placeholder="80202" value={signupForm.zip} onChange={e => updateSignup("zip", e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Country</label>
+                    <input style={smallInputStyle} placeholder="US" value={signupForm.country} onChange={e => updateSignup("country", e.target.value)} />
                   </div>
                 </div>
 
-                <div>
-                  <label style={labelStyle}>Email Address *</label>
-                  <input type="email" style={inputStyle} placeholder="john@company.com" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} required />
+                {signupError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}>{signupError}</div>}
+
+                <button type="submit" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "13px", cursor: "pointer", marginTop: "4px" }}>
+                  Continue to Password →
+                </button>
+                <p style={{ fontSize: "11px", color: "#333", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+                  Already have an account? <span onClick={() => setTab("login")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>Sign in</span>
+                </p>
+              </form>
+            )}
+
+            {/* SIGNUP — Step 2: Password */}
+            {tab === "signup" && !signupDone && step === 2 && (
+              <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div style={{ background: "#13161A", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 14px", marginBottom: "4px" }}>
+                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#5A9E5A", margin: "0 0 4px" }}>✓ Account Info Saved</p>
+                  <p style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{signupForm.full_name} · {signupForm.email}{signupForm.company ? ` · ${signupForm.company}` : ""}</p>
                 </div>
 
                 <div>
-                  <label style={labelStyle}>Password * (min 8 characters)</label>
+                  <label style={labelStyle}>Create Password * (min 8 characters)</label>
                   <div style={{ position: "relative" }}>
-                    <input
-                      type={showSignupPassword ? "text" : "password"}
-                      style={{ ...inputStyle, paddingRight: "44px" }}
-                      placeholder="••••••••"
-                      value={signupPassword}
-                      onChange={e => setSignupPassword(e.target.value)}
-                      required
-                      minLength={8}
-                    />
-                    <button type="button" onClick={() => setShowSignupPassword(!showSignupPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: "0" }}>
-                      {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <input type={showPassword ? "text" : "password"} style={{ ...inputStyle, paddingRight: "44px" }} placeholder="••••••••" value={signupForm.password} onChange={e => updateSignup("password", e.target.value)} required minLength={8} />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: 0 }}>
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
@@ -340,50 +315,24 @@ export default function LoginPage() {
                 <div>
                   <label style={labelStyle}>Confirm Password *</label>
                   <div style={{ position: "relative" }}>
-                    <input
-                      type={showSignupConfirm ? "text" : "password"}
-                      style={{ ...inputStyle, paddingRight: "44px", borderColor: signupConfirm && signupPassword !== signupConfirm ? "rgba(169,30,34,0.5)" : "rgba(255,255,255,0.12)" }}
-                      placeholder="••••••••"
-                      value={signupConfirm}
-                      onChange={e => setSignupConfirm(e.target.value)}
-                      required
-                    />
-                    <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: "0" }}>
-                      {showSignupConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <input type={showConfirm ? "text" : "password"} style={{ ...inputStyle, paddingRight: "44px", borderColor: signupForm.confirm_password && signupForm.password !== signupForm.confirm_password ? "rgba(169,30,34,0.5)" : "rgba(255,255,255,0.12)" }} placeholder="••••••••" value={signupForm.confirm_password} onChange={e => updateSignup("confirm_password", e.target.value)} required />
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: 0 }}>
+                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  {signupConfirm && signupPassword !== signupConfirm && (
+                  {signupForm.confirm_password && signupForm.password !== signupForm.confirm_password && (
                     <p style={{ fontSize: "11px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", marginTop: "4px" }}>Passwords do not match</p>
                   )}
                 </div>
 
-                {signupError && (
-                  <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", lineHeight: "1.5" }}>
-                    {signupError}
-                  </div>
-                )}
+                {signupError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}>{signupError}</div>}
 
-                <button
-                  type="submit"
-                  disabled={signupLoading || (!!signupConfirm && signupPassword !== signupConfirm)}
-                  style={{
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: "13px", fontWeight: 700,
-                    letterSpacing: "0.12em", textTransform: "uppercase",
-                    color: "#fff",
-                    background: signupLoading ? "#333" : "#A91E22",
-                    border: "none", padding: "13px",
-                    cursor: signupLoading ? "not-allowed" : "pointer",
-                    marginTop: "4px",
-                  }}
-                >
-                  {signupLoading ? "Submitting..." : "Request Access →"}
-                </button>
-
-                <p style={{ fontSize: "11px", color: "#333", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
-                  Already have an account?{" "}
-                  <span onClick={() => setTab("login")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>Sign in</span>
-                </p>
+                <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                  <button type="button" onClick={() => setStep(1)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "11px 16px", cursor: "pointer" }}>← Back</button>
+                  <button type="submit" disabled={signupLoading || (!!signupForm.confirm_password && signupForm.password !== signupForm.confirm_password)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: signupLoading ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: signupLoading ? "not-allowed" : "pointer" }}>
+                    {signupLoading ? "Submitting..." : "Request Access →"}
+                  </button>
+                </div>
               </form>
             )}
 
@@ -392,18 +341,11 @@ export default function LoginPage() {
               <div style={{ textAlign: "center", padding: "20px 0" }}>
                 <div style={{ width: "52px", height: "52px", background: "rgba(196,169,58,0.1)", border: "1px solid rgba(196,169,58,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", margin: "0 auto 16px" }}>⏳</div>
                 <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: "0 0 10px" }}>Request Submitted</h3>
-                <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 8px", lineHeight: "1.6" }}>
-                  Your account request has been sent to the Edel Golf team.
-                </p>
-                <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px", lineHeight: "1.6" }}>
-                  Once approved, you'll receive an email and can log in with the password you just set.
-                </p>
-                <button onClick={() => { setTab("login"); setSignupDone(false) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>
-                  Back to Sign In
-                </button>
+                <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 8px", lineHeight: "1.6" }}>Your account request has been sent to the Edel Golf team.</p>
+                <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px", lineHeight: "1.6" }}>Once approved, you can log in with the password you just set.</p>
+                <button onClick={() => { setTab("login"); setSignupDone(false); setStep(1) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>Back to Sign In</button>
               </div>
             )}
-
           </div>
         </div>
 
