@@ -1,50 +1,69 @@
 "use client"
 
-
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase"
 import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
-  Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch,Upload
+  Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch, Upload,
+  UserCheck,
 } from "lucide-react"
-
-const nav = [
-  { section: "Overview", items: [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  ]},
-  { section: "Orders", items: [
-    { label: "All Orders", href: "/orders/all", icon: ClipboardList, badge: 0 },
-    { label: "New Order", href: "/orders/new", icon: Plus },
-    { label: "Pending Review", href: "/orders/pending", icon: Clock, badge: 0 },
-    { label: "Drafts", href: "/orders/drafts", icon: FileText },
-  ]},
-  { section: "Operations", items: [
-    { label: "PO Tracker", href: "/operations/pos", icon: Briefcase },
-    { label: "Invoices", href: "/operations/invoices", icon: FileCheck },
-    { label: "Calendar", href: "/operations/calendar", icon: Calendar },
-    { label: "Alerts", href: "/operations/alerts", icon: Bell },
-  ]},
-  { section: "Inventory", items: [
-    { label: "Stock Levels", href: "/inventory", icon: Package },
-    { label: "Forecast / Reorder", href: "/inventory/forecast", icon: TrendingDown },
-    { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
-    { label: "SKUs", href: "/inventory/skus", icon: List },
-    { label: "Products", href: "/inventory/products", icon: Boxes },
-    { label: "Shopify Import", href: "/inventory/import", icon: Upload },
-  ]},
-  { section: "Accounts", items: [
-    { label: "Dealers", href: "/dealers", icon: Building2 },
-    { label: "Contacts", href: "/dealers/contacts", icon: Users },
-  ]},
-  { section: "Reports", items: [
-    { label: "Analytics", href: "/settings/analytics", icon: BarChart2 },
-    { label: "Settings", href: "/settings", icon: Settings },
-  ]},
-]
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const [pendingCount, setPendingCount] = useState(0)
+  const [notifCount, setNotifCount] = useState(0)
+
+  useEffect(() => { loadCounts() }, [])
+
+  async function loadCounts() {
+    const supabase = createClient()
+    const [pendingResult, notifResult] = await Promise.all([
+      supabase.from("profiles").select("id", { count: "exact" }).eq("role", "dealer").eq("is_approved", false),
+      supabase.from("portal_notifications").select("id", { count: "exact" }).eq("is_read", false),
+    ])
+    setPendingCount(pendingResult.count || 0)
+    setNotifCount(notifResult.count || 0)
+  }
+
+  const nav = [
+    { section: "Overview", items: [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    ]},
+    { section: "Orders", items: [
+      { label: "All Orders", href: "/orders/all", icon: ClipboardList },
+      { label: "New Order", href: "/orders/new", icon: Plus },
+      { label: "Pending Review", href: "/orders/pending", icon: Clock },
+      { label: "Drafts", href: "/orders/drafts", icon: FileText },
+    ]},
+    { section: "Operations", items: [
+      { label: "PO Tracker", href: "/operations/pos", icon: Briefcase },
+      { label: "Invoices", href: "/operations/invoices", icon: FileCheck },
+      { label: "Calendar", href: "/operations/calendar", icon: Calendar },
+      { label: "Alerts", href: "/operations/alerts", icon: Bell, badge: notifCount },
+    ]},
+    { section: "Inventory", items: [
+      { label: "Stock Levels", href: "/inventory", icon: Package },
+      { label: "Forecast / Reorder", href: "/inventory/forecast", icon: TrendingDown },
+      { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
+      { label: "SKUs", href: "/inventory/skus", icon: List },
+      { label: "Products", href: "/inventory/products", icon: Boxes },
+      { label: "Shopify Import", href: "/inventory/import", icon: Upload },
+    ]},
+    { section: "Accounts", items: [
+      { label: "Dealers", href: "/dealers", icon: Building2 },
+      { label: "Contacts", href: "/dealers/contacts", icon: Users },
+      { label: "Approvals", href: "/approvals", icon: UserCheck, badge: pendingCount },
+    ]},
+    { section: "Settings", items: [
+      { label: "My Profile", href: "/profile", icon: Users },
+      { label: "Analytics", href: "/settings/analytics", icon: BarChart2 },
+      { label: "Settings", href: "/settings", icon: Settings },
+    ]},
+  ]
+
   return (
     <aside style={{
       background: "#161A1D",
@@ -87,6 +106,7 @@ export default function Sidebar() {
                     fontSize: "9px", fontWeight: 700,
                     padding: "2px 6px",
                     fontFamily: "'Barlow Condensed', sans-serif",
+                    borderRadius: "2px",
                   }}>{item.badge}</span>
                 )}
               </Link>
