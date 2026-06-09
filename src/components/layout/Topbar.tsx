@@ -24,11 +24,11 @@ export default function Topbar() {
   async function loadProfile() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const { data } = await supabase.from("profiles").select("full_name, title").eq("id", user.id).single()
+    const { data } = await supabase.from("profiles").select("full_name").eq("id", user.id).single()
     setProfile({
       full_name: data?.full_name || user.email || "Admin",
       email: user.email || "",
-      title: data?.title || "Administrator",
+      title: "Administrator",
     })
   }
 
