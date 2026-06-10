@@ -119,6 +119,7 @@ export default function PortalOrderPage() {
       dealer_id: profile?.dealer_id,
       dealer_name: profile?.dealer?.company || profile?.dealer?.name || profile?.full_name,
       status: "pending",
+      order_type: profile?.dealer?.dealer_type || "wholesale",
       total_amount: total,
       notes,
       submitted_at: new Date().toISOString(),

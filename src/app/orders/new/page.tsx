@@ -212,7 +212,7 @@ export default function NewOrderPage() {
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: 0 }}>Order For</p>
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#444" }}>Type:</span>
-              {(["wholesale", "factory", "international", "misc"] as const).map(t => (
+              {(["wholesale", "fitter", "retail", "international", "factory", "misc"] as const).map(t => (
                 <button key={t} onClick={() => setOrderTypeSelection(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer", border: "none", background: orderTypeSelection === t ? "#A91E22" : "transparent", color: orderTypeSelection === t ? "#fff" : "#555", outline: orderTypeSelection === t ? "none" : "1px solid #2A2A2A" }}>
                   {t}
                 </button>

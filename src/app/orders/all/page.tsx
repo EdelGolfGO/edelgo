@@ -17,7 +17,7 @@ type OrderItem = {
   configuration: any
 }
 
-type OrderType = "all" | "wholesale" | "factory" | "international" | "misc"
+type OrderType = "all" | "wholesale" | "fitter" | "retail" | "international" | "factory" | "misc"
 
 type Order = {
   id: string
@@ -270,7 +270,7 @@ export default function AllOrdersPage() {
       {/* Order type toggles */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#444" }}>Type:</span>
-        {(["all", "wholesale", "factory", "international", "misc"] as const).map(t => (
+        {(["all", "wholesale", "fitter", "retail", "international", "factory", "misc"] as const).map(t => (
           <button key={t} onClick={() => setOrderType(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "5px 12px", cursor: "pointer", border: "none", borderRadius: "0", background: orderType === t ? "#A91E22" : "transparent", color: orderType === t ? "#fff" : "#555", outline: orderType === t ? "none" : "1px solid #2A2A2A" }}>
             {t === "all" ? `All (${orders.length})` : `${t.charAt(0).toUpperCase() + t.slice(1)} (${orders.filter(o => (o.order_type || "wholesale") === t).length})`}
           </button>
