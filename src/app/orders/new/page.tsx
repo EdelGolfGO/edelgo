@@ -1,212 +1,156 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase"
+import { Plus, X, ShoppingCart, ZoomIn, Image, ArrowLeft } from "lucide-react"
 
-const CATALOG = {
-  "Built Clubs": [
-    {
-      id: "putter-eas",
-      name: "EAS Putter",
-      price: 425,
-      image: "🏌️",
-      options: {
-        shaft: ["Steel 35\"", "Steel 34\"", "Steel 33\""],
-        grip: ["Black Pistol", "White Pistol", "Jumbo Pistol", "Mid-Size"],
-        ferrule: ["Black", "White", "None"],
-      },
-    },
-    {
-      id: "putter-array",
-      name: "Array Putter",
-      price: 395,
-      image: "🏌️",
-      options: {
-        shaft: ["Steel 35\"", "Steel 34\"", "Steel 33\""],
-        grip: ["Black Pistol", "White Pistol", "Jumbo Pistol", "Mid-Size"],
-        ferrule: ["Black", "White", "None"],
-      },
-    },
-    {
-      id: "wedge-sms",
-      name: "SMS Wedge",
-      price: 185,
-      image: "⛳",
-      options: {
-        loft: ["50°", "52°", "54°", "56°", "58°", "60°"],
-        shaft: ["Steel Stiff", "Steel Regular", "Steel X-Stiff"],
-        grip: ["Standard Black", "Standard White", "Mid-Size"],
-        ferrule: ["Black", "White", "None"],
-      },
-    },
-    {
-      id: "wedge-smspro",
-      name: "SMS Pro Wedge",
-      price: 210,
-      image: "⛳",
-      options: {
-        loft: ["50°", "52°", "54°", "56°", "58°", "60°"],
-        shaft: ["Steel Stiff", "Steel Regular", "Steel X-Stiff"],
-        grip: ["Standard Black", "Standard White", "Mid-Size"],
-        ferrule: ["Black", "White", "None"],
-      },
-    },
-  ],
-  "Head Only": [
-    { id: "head-eas", name: "EAS Putter Head", price: 280, image: "🔩", options: {} },
-    { id: "head-array", name: "Array Putter Head", price: 260, image: "🔩", options: {} },
-    { id: "head-sms", name: "SMS Wedge Head", price: 120, image: "🔩", options: { loft: ["50°", "52°", "54°", "56°", "58°", "60°"] } },
-  ],
-  "Components": [
-    { id: "comp-shaft-putter", name: "Putter Shaft — Steel", price: 28, image: "📏", options: { length: ["33\"", "34\"", "35\""] } },
-    { id: "comp-shaft-wedge", name: "Wedge Shaft — Steel", price: 22, image: "📏", options: { flex: ["Regular", "Stiff", "X-Stiff"] } },
-    { id: "comp-grip-pistol", name: "Pistol Grip", price: 12, image: "🖐️", options: { color: ["Black", "White"] } },
-    { id: "comp-grip-standard", name: "Standard Grip", price: 8, image: "🖐️", options: { size: ["Standard", "Mid-Size", "Jumbo"] } },
-    { id: "comp-ferrule", name: "Ferrule", price: 2, image: "⚙️", options: { color: ["Black", "White"] } },
-  ],
-  "Accessories": [
-    { id: "acc-headcover", name: "Putter Headcover", price: 45, image: "🧢", options: { color: ["Black", "White", "Red"] } },
-    { id: "acc-tool", name: "Loft/Lie Tool", price: 85, image: "🔧", options: {} },
-    { id: "acc-wrench", name: "Torque Wrench", price: 35, image: "🔧", options: {} },
-  ],
-  "Apparel & Gear": [
-    { id: "app-hat", name: "Edel Structured Hat", price: 32, image: "🧢", options: { color: ["Black", "White", "Navy"] } },
-    { id: "app-polo", name: "Edel Performance Polo", price: 65, image: "👕", options: { size: ["S", "M", "L", "XL", "XXL"], color: ["Black", "White"] } },
-    { id: "app-bag", name: "Edel Staff Bag", price: 285, image: "🎒", options: { color: ["Black", "Red/Black"] } },
-  ],
+type SKU = {
+  id: string
+  sku_code: string
+  name: string
+  msrp: number
+  wholesaler_price: number
+  fitter_price: number
+  is_active: boolean
+  image_url: string | null
+  product: { name: string; category: string }
 }
 
-type Tab = keyof typeof CATALOG
+type Dealer = {
+  id: string
+  name: string
+  company: string
+  pricing_tier?: string
+}
+
 type OrderItem = {
   id: string
-  productId: string
-  name: string
-  price: number
-  options: Record<string, string>
+  sku: SKU
   quantity: number
+  unit_price: number
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  built_club: "Built Clubs",
+  head_only: "Head Only",
+  accessory: "Accessories",
+  apparel: "Apparel",
+  component: "Components",
 }
 
 export default function NewOrderPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<Tab>("Built Clubs")
+  const [skus, setSkus] = useState<SKU[]>([])
+  const [dealers, setDealers] = useState<Dealer[]>([])
+  const [selectedDealer, setSelectedDealer] = useState<Dealer | null>(null)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, Record<string, string>>>({})
+  const [activeCategory, setActiveCategory] = useState("")
+  const [search, setSearch] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [errors, setErrors] = useState<string[]>([])
-  const [draftModal, setDraftModal] = useState(false)
+  const [notes, setNotes] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [lightboxSku, setLightboxSku] = useState<SKU | null>(null)
+  const [showAllSkus, setShowAllSkus] = useState(false)
 
-  function getOptions(productId: string) {
-    return selectedOptions[productId] || {}
-  }
+  useEffect(() => { loadData() }, [])
 
-  function setOption(productId: string, key: string, value: string) {
-    setSelectedOptions(prev => ({
-      ...prev,
-      [productId]: { ...prev[productId], [key]: value }
-    }))
-  }
-
-  function addToOrder(product: any) {
-    const opts = getOptions(product.id)
-    const optionKeys = Object.keys(product.options)
-    const missingOptions = optionKeys.filter(k => !opts[k])
-    if (missingOptions.length > 0) {
-      setErrors([`Please select: ${missingOptions.join(", ")} for ${product.name}`])
-      return
+  async function loadData() {
+    const supabase = createClient()
+    const [skusResult, dealersResult] = await Promise.all([
+      supabase.from("skus").select("*, product:products(name, category)").eq("is_active", true).order("sku_code"),
+      supabase.from("dealers").select("id, name, company").order("name"),
+    ])
+    if (skusResult.data) {
+      setSkus(skusResult.data as any)
+      const cats = [...new Set((skusResult.data as any[]).map(s => s.product?.category).filter(Boolean))]
+      if (cats.length > 0) setActiveCategory(cats[0])
     }
-    setErrors([])
-    const itemId = `${product.id}-${Date.now()}`
-    setOrderItems(prev => [...prev, {
-      id: itemId,
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      options: { ...opts },
-      quantity: 1,
-    }])
+    if (dealersResult.data) setDealers(dealersResult.data)
+    setLoading(false)
   }
 
-  function updateQuantity(itemId: string, qty: number) {
-    setOrderItems(prev => prev.map(item =>
-      item.id === itemId ? { ...item, quantity: Math.max(0, qty) } : item
-    ))
+  function getPrice(sku: SKU): number {
+    const tier = selectedDealer?.pricing_tier || "wholesaler"
+    if (tier === "fitter") return sku.fitter_price || sku.wholesaler_price || sku.msrp
+    return sku.wholesaler_price || sku.msrp
   }
 
-  function removeItem(itemId: string) {
-    setOrderItems(prev => prev.filter(item => item.id !== itemId))
+  function addToOrder(sku: SKU) {
+    const existing = orderItems.find(i => i.sku.id === sku.id)
+    if (existing) {
+      setOrderItems(prev => prev.map(i => i.sku.id === sku.id ? { ...i, quantity: i.quantity + 1 } : i))
+    } else {
+      setOrderItems(prev => [...prev, { id: `${sku.id}-${Date.now()}`, sku, quantity: 1, unit_price: getPrice(sku) }])
+    }
+  }
+
+  function updateQty(id: string, qty: number) {
+    if (qty <= 0) setOrderItems(prev => prev.filter(i => i.id !== id))
+    else setOrderItems(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i))
   }
 
   function getTotal() {
-    return orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  }
-
-  function handleSaveDraft() {
-    const drafts = JSON.parse(localStorage.getItem("edelgo_drafts") || "[]")
-    const draft = {
-      id: `draft-${Date.now()}`,
-      savedAt: new Date().toISOString(),
-      items: orderItems,
-    }
-    drafts.push(draft)
-    localStorage.setItem("edelgo_drafts", JSON.stringify(drafts))
-    setDraftModal(false)
-    router.push("/orders/drafts")
-  }
-
-  function handleDiscard() {
-    setDraftModal(false)
-    setOrderItems([])
-    router.push("/dashboard")
+    return orderItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
   }
 
   async function handleSubmit() {
-    const itemsWithNoQty = orderItems.filter(i => i.quantity === 0)
-    if (orderItems.length === 0) {
-      setErrors(["Please add at least one item to the order."])
-      return
-    }
-    if (itemsWithNoQty.length > 0) {
-      setErrors([`Please set quantity for: ${itemsWithNoQty.map(i => i.name).join(", ")}`])
-      return
-    }
-    setErrors([])
+    if (orderItems.length === 0) return
     setSubmitting(true)
-    await new Promise(r => setTimeout(r, 1000))
+    const supabase = createClient()
+    const orderNumber = `EF-${Date.now().toString().slice(-6)}`
+    const total = getTotal()
+
+    const { data: order, error } = await supabase.from("b2b_orders").insert({
+      order_number: orderNumber,
+      dealer_id: selectedDealer?.id || null,
+      dealer_name: selectedDealer?.company || selectedDealer?.name || "Walk-in / Direct",
+      status: "approved",
+      total_amount: total,
+      notes,
+      submitted_at: new Date().toISOString(),
+      approved_at: new Date().toISOString(),
+    }).select("id").single()
+
+    if (error || !order) { setSubmitting(false); return }
+
+    await supabase.from("b2b_order_items").insert(
+      orderItems.map(item => ({
+        order_id: order.id,
+        sku_id: item.sku.id,
+        sku_code: item.sku.sku_code,
+        product_name: item.sku.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.unit_price * item.quantity,
+        configuration: {},
+      }))
+    )
+
     setSubmitting(false)
     setSubmitted(true)
   }
 
+  // Admin sees all orderable SKUs by default, or all if toggled
+  const displaySkus = showAllSkus ? skus : skus.filter((s: any) => s.is_orderable !== false)
+  const categories = [...new Set(displaySkus.map(s => s.product?.category).filter(Boolean))]
+  const filteredSkus = displaySkus.filter(s => {
+    if (s.product?.category !== activeCategory) return false
+    if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.sku_code.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+
   if (submitted) {
     return (
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center",
-        justifyContent: "center", minHeight: "60vh", gap: "16px",
-      }}>
-        <div style={{
-          width: "56px", height: "56px", background: "rgba(90,158,90,0.1)",
-          border: "1.5px solid #5A9E5A", display: "flex",
-          alignItems: "center", justifyContent: "center",
-          fontSize: "24px",
-        }}>✓</div>
-        <h2 style={{
-          fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px",
-          fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
-          color: "#fff", margin: 0,
-        }}>Order Submitted</h2>
-        <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
-          Your order has been submitted for review. You'll receive a confirmation shortly.
-        </p>
-        <button
-          onClick={() => { setSubmitted(false); setOrderItems([]) }}
-          style={{
-            fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px",
-            fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-            color: "#fff", background: "#A91E22", border: "none",
-            padding: "10px 24px", cursor: "pointer", marginTop: "8px",
-          }}>
-          Place Another Order
-        </button>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "16px", textAlign: "center" }}>
+        <div style={{ width: "64px", height: "64px", background: "rgba(90,158,90,0.1)", border: "1px solid rgba(90,158,90,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px" }}>✓</div>
+        <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "28px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>Order Created</h2>
+        <p style={{ fontSize: "14px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Order has been created and auto-approved.</p>
+        <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+          <button onClick={() => router.push("/orders/all")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>View All Orders</button>
+          <button onClick={() => { setSubmitted(false); setOrderItems([]) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px 20px", cursor: "pointer" }}>New Order</button>
+        </div>
       </div>
     )
   }
@@ -215,370 +159,186 @@ export default function NewOrderPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
       {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "flex-end", justifyContent: "space-between",
-        paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)",
-      }}>
-        <div>
-          <button
-            onClick={() => orderItems.length > 0 ? setDraftModal(true) : router.push("/dashboard")}
-            style={{
-              fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px",
-              fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase",
-              color: "#888", background: "transparent", border: "none",
-              cursor: "pointer", padding: 0, marginBottom: "8px",
-              display: "flex", alignItems: "center", gap: "6px",
-            }}>
-            ← Back to Dashboard
-          </button>
-          <p style={{
-            fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px",
-            fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase",
-            color: "#A91E22", marginBottom: "4px",
-          }}>New Order</p>
-          <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Build Your Order</h1>
-          <p style={{
-            fontSize: "12px", color: "#888", marginTop: "5px",
-            fontFamily: "'Barlow', sans-serif", textTransform: "none",
-            letterSpacing: "normal", fontWeight: 400,
-          }}>Select products from the catalog, configure options, then review your order sheet</p>
+      <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
+        <button onClick={() => router.push("/dashboard")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "#555", cursor: "pointer", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px", padding: 0 }}>
+          <ArrowLeft size={13} /> Back to Dashboard
+        </button>
+        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Orders</p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>New Order</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <label style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#555" }}>Show all SKUs</label>
+            <input type="checkbox" checked={showAllSkus} onChange={e => setShowAllSkus(e.target.checked)} style={{ cursor: "pointer" }} />
+          </div>
         </div>
       </div>
 
-      {/* Errors */}
-      {errors.length > 0 && (
-        <div style={{
-          background: "rgba(169,30,34,0.1)", border: "0.5px solid rgba(169,30,34,0.3)",
-          padding: "12px 16px", fontSize: "13px", color: "#A91E22",
-          fontFamily: "'Barlow', sans-serif",
-        }}>
-          {errors[0]}
+      {/* Dealer selector */}
+      <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "16px 20px" }}>
+        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "10px" }}>Order For</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div>
+            <select
+              style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: selectedDealer ? "#fff" : "#555", padding: "10px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }}
+              value={selectedDealer?.id || ""}
+              onChange={e => {
+                const dealer = dealers.find(d => d.id === e.target.value)
+                setSelectedDealer(dealer || null)
+              }}
+            >
+              <option value="">Walk-in / Direct / No dealer</option>
+              {dealers.map(d => <option key={d.id} value={d.id}>{d.company || d.name}</option>)}
+            </select>
+          </div>
+          {selectedDealer && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "4px 10px" }}>
+                {selectedDealer.pricing_tier || "Wholesaler"} pricing
+              </span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Main layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "16px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
 
-        {/* LEFT — Catalog */}
+        {/* Catalog */}
         <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-
-          {/* Tabs */}
-          <div style={{
-            display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.10)",
-            background: "#1A1E22", overflowX: "auto",
-          }}>
-            {(Object.keys(CATALOG) as Tab[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: "11px", fontWeight: 700,
-                  letterSpacing: "0.1em", textTransform: "uppercase",
-                  padding: "12px 16px", cursor: "pointer", border: "none",
-                  background: "transparent", whiteSpace: "nowrap",
-                  color: activeTab === tab ? "#fff" : "#666",
-                  borderBottom: activeTab === tab ? "2px solid #A91E22" : "2px solid transparent",
-                  marginBottom: "-1px",
-                }}
-              >{tab}</button>
+          <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
+            <input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }} />
+          </div>
+          <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.08)", overflowX: "auto" }}>
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setActiveCategory(cat)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 16px", cursor: "pointer", border: "none", background: "transparent", whiteSpace: "nowrap", color: activeCategory === cat ? "#fff" : "#555", borderBottom: activeCategory === cat ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
+                {CATEGORY_LABELS[cat] || cat.replace("_", " ")} ({displaySkus.filter(s => s.product?.category === cat).length})
+              </button>
             ))}
           </div>
 
-          {/* Products */}
-          <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {CATALOG[activeTab].map(product => (
-              <div key={product.id} style={{
-                background: "#1E2226",
-                border: "0.5px solid rgba(255,255,255,0.08)",
-                padding: "16px",
-              }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
-                  <div>
-                    <p style={{
-                      fontFamily: "'Barlow Condensed', sans-serif",
-                      fontSize: "15px", fontWeight: 700,
-                      color: "#fff", margin: 0, letterSpacing: "0.04em",
-                      textTransform: "uppercase",
-                    }}>{product.name}</p>
-                    <p style={{
-                      fontFamily: "'Barlow Condensed', sans-serif",
-                      fontSize: "14px", fontWeight: 600,
-                      color: "#A91E22", margin: "3px 0 0",
-                    }}>${product.price.toFixed(2)}</p>
-                  </div>
-                  <span style={{ fontSize: "24px" }}>{product.image}</span>
-                </div>
-
-                {/* Options */}
-                {Object.keys(product.options).length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
-                    {Object.entries(product.options).map(([key, values]) => (
-                      <div key={key}>
-                        <label style={{
-                          fontFamily: "'Barlow Condensed', sans-serif",
-                          fontSize: "9px", fontWeight: 700,
-                          letterSpacing: "0.14em", textTransform: "uppercase",
-                          color: "#777", display: "block", marginBottom: "4px",
-                        }}>{key}</label>
-                        <select
-                          value={getOptions(product.id)[key] || ""}
-                          onChange={e => setOption(product.id, key, e.target.value)}
-                          style={{
-                            background: "#13161A",
-                            border: "0.5px solid rgba(255,255,255,0.12)",
-                            color: getOptions(product.id)[key] ? "#fff" : "#666",
-                            padding: "5px 8px",
-                            fontSize: "12px",
-                            fontFamily: "'Barlow', sans-serif",
-                            cursor: "pointer",
-                            outline: "none",
-                          }}
-                        >
-                          <option value="">Select...</option>
-                          {(values as string[]).map(v => (
-                            <option key={v} value={v}>{v}</option>
-                          ))}
-                        </select>
+          {loading ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "#444", fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>Loading catalog...</div>
+          ) : filteredSkus.length === 0 ? (
+            <div style={{ padding: "40px", textAlign: "center", color: "#444", fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>No products in this category</div>
+          ) : (
+            <div style={{ padding: "12px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px" }}>
+              {filteredSkus.map(sku => {
+                const price = getPrice(sku)
+                const inOrder = orderItems.find(i => i.sku.id === sku.id)
+                return (
+                  <div key={sku.id} style={{ background: inOrder ? "rgba(169,30,34,0.05)" : "#1E2226", border: `0.5px solid ${inOrder ? "rgba(169,30,34,0.25)" : "rgba(255,255,255,0.06)"}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                    <div style={{ position: "relative", height: "120px", background: "#13161A", flexShrink: 0 }}>
+                      {sku.image_url ? (
+                        <>
+                          <img src={sku.image_url} alt={sku.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          <button onClick={() => setLightboxSku(sku)} style={{ position: "absolute", top: "6px", right: "6px", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <ZoomIn size={12} />
+                          </button>
+                        </>
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "6px" }}>
+                          <Image size={24} color="#2A2A2A" />
+                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#2A2A2A" }}>No Photo</span>
+                        </div>
+                      )}
+                      {inOrder && (
+                        <div style={{ position: "absolute", top: "6px", left: "6px", background: "#A91E22", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", padding: "2px 6px" }}>
+                          {inOrder.quantity} added
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: "8px 10px", flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, color: "#A91E22", margin: 0, letterSpacing: "0.04em" }}>{sku.sku_code}</p>
+                      <p style={{ fontSize: "11px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: 0, lineHeight: "1.3" }}>{sku.name}</p>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "6px" }}>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff", margin: 0 }}>${price.toFixed(2)}</p>
+                        <button onClick={() => addToOrder(sku)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
+                          <Plus size={11} /> Add
+                        </button>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                )}
-
-                <button
-                  onClick={() => addToOrder(product)}
-                  style={{
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: "11px", fontWeight: 700,
-                    letterSpacing: "0.1em", textTransform: "uppercase",
-                    color: "#fff", background: "#A91E22",
-                    border: "none", padding: "7px 16px",
-                    cursor: "pointer",
-                  }}>
-                  + Add to Order
-                </button>
-              </div>
-            ))}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* RIGHT — Order sheet */}
-        <div style={{
-          background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)",
-          position: "sticky", top: "20px",
-        }}>
-          <div style={{
-            padding: "14px 18px",
-            borderBottom: "0.5px solid rgba(255,255,255,0.10)",
-            background: "#1A1E22",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <span style={{
-              fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px",
-              fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888",
-            }}>Order Sheet</span>
-            <span style={{
-              fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px",
-              fontWeight: 700, color: "#666",
-            }}>{orderItems.length} item{orderItems.length !== 1 ? "s" : ""}</span>
+        {/* Order sheet */}
+        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", position: "sticky", top: "20px" }}>
+          <div style={{ padding: "14px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", gap: "8px" }}>
+            <ShoppingCart size={14} color="#666" />
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>Order Sheet</span>
+            <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#444" }}>{orderItems.length} item{orderItems.length !== 1 ? "s" : ""}</span>
           </div>
 
           {orderItems.length === 0 ? (
-            <div style={{
-              padding: "40px 20px", textAlign: "center",
-              fontSize: "13px", color: "#444",
-              fontFamily: "'Barlow', sans-serif",
-            }}>
-              No items added yet.<br />Select products from the catalog.
+            <div style={{ padding: "40px 20px", textAlign: "center", fontSize: "13px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>
+              No items yet.<br />Select products from the catalog.
             </div>
           ) : (
             <>
-              <div style={{ maxHeight: "450px", overflowY: "auto" }}>
+              <div style={{ maxHeight: "380px", overflowY: "auto" }}>
                 {orderItems.map(item => (
-                  <div key={item.id} style={{
-                    padding: "14px 18px",
-                    borderBottom: "0.5px solid rgba(255,255,255,0.06)",
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ flex: 1 }}>
-                        <p style={{
-                          fontFamily: "'Barlow Condensed', sans-serif",
-                          fontSize: "13px", fontWeight: 700,
-                          color: "#fff", margin: 0, textTransform: "uppercase",
-                          letterSpacing: "0.04em",
-                        }}>{item.name}</p>
-                        {Object.entries(item.options).map(([k, v]) => (
-                          <span key={k} style={{
-                            fontSize: "10px", color: "#666",
-                            fontFamily: "'Barlow', sans-serif",
-                            marginRight: "8px",
-                          }}>{k}: {v}</span>
-                        ))}
+                  <div key={item.id} style={{ padding: "10px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.05)", display: "flex", gap: "10px", alignItems: "center" }}>
+                    {item.sku.image_url ? (
+                      <img src={item.sku.image_url} alt={item.sku.name} style={{ width: "36px", height: "36px", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: "36px", height: "36px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Image size={12} color="#333" />
                       </div>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        style={{
-                          background: "none", border: "none",
-                          color: "#444", cursor: "pointer",
-                          fontSize: "16px", padding: "0 0 0 8px",
-                          lineHeight: 1,
-                        }}>×</button>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, color: "#A91E22", margin: 0 }}>{item.sku.sku_code}</p>
+                      <p style={{ fontSize: "11px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sku.name}</p>
                     </div>
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "10px" }}>
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          style={{
-                            width: "28px", height: "28px",
-                            background: "#1A1E22",
-                            border: "0.5px solid rgba(255,255,255,0.12)",
-                            color: "#888", cursor: "pointer", fontSize: "16px",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>−</button>
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={e => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                          style={{
-                            width: "44px", height: "28px",
-                            background: "#1A1E22",
-                            border: "0.5px solid rgba(255,255,255,0.12)",
-                            borderLeft: "none", borderRight: "none",
-                            color: item.quantity === 0 ? "#A91E22" : "#fff",
-                            textAlign: "center", fontSize: "13px",
-                            fontFamily: "'Barlow Condensed', sans-serif",
-                            fontWeight: 700, outline: "none",
-                          }}
-                        />
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          style={{
-                            width: "28px", height: "28px",
-                            background: "#1A1E22",
-                            border: "0.5px solid rgba(255,255,255,0.12)",
-                            color: "#888", cursor: "pointer", fontSize: "16px",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>+</button>
-                      </div>
-                      <span style={{
-                        fontFamily: "'Barlow Condensed', sans-serif",
-                        fontSize: "14px", fontWeight: 700,
-                        color: item.quantity === 0 ? "#333" : "#fff",
-                      }}>
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
+                      <button onClick={() => updateQty(item.id, item.quantity - 1)} style={{ width: "20px", height: "20px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.12)", color: "#888", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", width: "22px", textAlign: "center" }}>{item.quantity}</span>
+                      <button onClick={() => updateQty(item.id, item.quantity + 1)} style={{ width: "20px", height: "20px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.12)", color: "#888", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                     </div>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", margin: 0, flexShrink: 0 }}>${(item.unit_price * item.quantity).toFixed(2)}</p>
+                    <button onClick={() => setOrderItems(prev => prev.filter(i => i.id !== item.id))} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+                      <X size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
-
-              {/* Total + submit */}
-              <div style={{ padding: "16px 18px", borderTop: "0.5px solid rgba(255,255,255,0.10)" }}>
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  marginBottom: "14px",
-                }}>
-                  <span style={{
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: "11px", fontWeight: 700,
-                    letterSpacing: "0.14em", textTransform: "uppercase", color: "#888",
-                  }}>Order Total</span>
-                  <span style={{
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: "20px", fontWeight: 700, color: "#fff",
-                  }}>${getTotal().toFixed(2)}</span>
+              <div style={{ padding: "14px 16px", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+                <textarea placeholder="Order notes..." value={notes} onChange={e => setNotes(e.target.value)} style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", resize: "none", minHeight: "50px", boxSizing: "border-box" as const, marginBottom: "12px" }} />
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#666" }}>Order Total</span>
+                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, color: "#fff" }}>${getTotal().toFixed(2)}</span>
                 </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  style={{
-                    width: "100%",
-                    fontFamily: "'Barlow Condensed', sans-serif",
-                    fontSize: "13px", fontWeight: 700,
-                    letterSpacing: "0.12em", textTransform: "uppercase",
-                    color: "#fff",
-                    background: submitting ? "#5A0F11" : "#A91E22",
-                    border: "none", padding: "13px",
-                    cursor: submitting ? "not-allowed" : "pointer",
-                  }}>
-                  {submitting ? "Submitting..." : "Submit Order →"}
+                <button onClick={handleSubmit} disabled={submitting} style={{ width: "100%", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: submitting ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: submitting ? "not-allowed" : "pointer" }}>
+                  {submitting ? "Creating..." : "Create Order →"}
                 </button>
-                <p style={{
-                  fontSize: "10px", color: "#444", textAlign: "center",
-                  marginTop: "8px", fontFamily: "'Barlow', sans-serif",
-                  fontWeight: 400, textTransform: "none", letterSpacing: "normal",
-                }}>
-                  Orders require admin approval before processing
-                </p>
+                <p style={{ fontSize: "10px", color: "#444", textAlign: "center", marginTop: "8px", fontFamily: "'Barlow', sans-serif" }}>Admin orders are auto-approved</p>
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Draft modal */}
-      {draftModal && (
-        <div style={{
-          position: "fixed", inset: 0,
-          background: "rgba(0,0,0,0.75)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 200,
-        }}
-          onClick={() => setDraftModal(false)}
-        >
-          <div
-            style={{
-              background: "#1E2226",
-              border: "0.5px solid rgba(255,255,255,0.10)",
-              borderTop: "2px solid #A91E22",
-              padding: "32px",
-              width: "380px",
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 style={{
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: "20px", fontWeight: 700,
-              textTransform: "uppercase", letterSpacing: "0.06em",
-              color: "#fff", margin: "0 0 8px",
-            }}>Save Draft?</h2>
-            <p style={{
-              fontSize: "13px", color: "#888",
-              fontFamily: "'Barlow', sans-serif",
-              margin: "0 0 24px", fontWeight: 400,
-              textTransform: "none", letterSpacing: "normal",
-            }}>
-              You have {orderItems.length} item{orderItems.length !== 1 ? "s" : ""} in your order. Save a draft or discard?
-            </p>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                onClick={handleDiscard}
-                style={{
-                  flex: 1,
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: "12px", fontWeight: 700,
-                  letterSpacing: "0.1em", textTransform: "uppercase",
-                  color: "#888", background: "transparent",
-                  border: "1px solid #333", padding: "10px",
-                  cursor: "pointer",
-                }}>Discard</button>
-              <button
-                onClick={handleSaveDraft}
-                style={{
-                  flex: 1,
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: "12px", fontWeight: 700,
-                  letterSpacing: "0.1em", textTransform: "uppercase",
-                  color: "#fff", background: "#A91E22",
-                  border: "none", padding: "10px",
-                  cursor: "pointer",
-                }}>Save Draft</button>
+      {/* Lightbox */}
+      {lightboxSku && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400 }} onClick={() => setLightboxSku(null)}>
+          <div style={{ maxWidth: "700px", width: "100%", padding: "20px" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <div>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", margin: "0 0 4px" }}>{lightboxSku.sku_code}</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, color: "#fff", margin: 0 }}>{lightboxSku.name}</p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <button onClick={() => { addToOrder(lightboxSku); setLightboxSku(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "9px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Plus size={13} /> Add to Order
+                </button>
+                <button onClick={() => setLightboxSku(null)} style={{ background: "none", border: "none", color: "#666", cursor: "pointer" }}><X size={24} /></button>
+              </div>
             </div>
+            <img src={lightboxSku.image_url!} alt={lightboxSku.name} style={{ width: "100%", maxHeight: "60vh", objectFit: "contain", display: "block" }} />
           </div>
         </div>
       )}
-
     </div>
   )
 }

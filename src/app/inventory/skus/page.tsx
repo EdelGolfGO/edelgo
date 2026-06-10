@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Plus, X, Search, Pencil, Trash2, Package } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Plus, X, Search, Pencil, Trash2, Upload, ZoomIn, Image } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 
 type SKU = {
@@ -16,6 +16,7 @@ type SKU = {
   is_active: boolean
   lead_time_days: number
   product_id: string
+  image_url: string | null
   product: { name: string; category: string }
 }
 
@@ -54,12 +55,6 @@ const emptySkuForm = {
   use_existing_product: true,
 }
 
-const emptyInvForm = {
-  qty_on_hand: "", qty_reserved: "0", qty_on_order: "0",
-  min_stock: "5", max_stock: "50", reorder_qty: "20",
-  adjustment_reason: "",
-}
-
 export default function SKUsPage() {
   const [skus, setSkus] = useState<SKU[]>([])
   const [inventory, setInventory] = useState<Record<string, InventoryRecord>>({})
@@ -71,9 +66,14 @@ export default function SKUsPage() {
   const [editSkuId, setEditSkuId] = useState<string | null>(null)
   const [skuForm, setSkuForm] = useState<any>(emptySkuForm)
   const [invModal, setInvModal] = useState<SKU | null>(null)
-  const [invForm, setInvForm] = useState<any>(emptyInvForm)
+  const [invForm, setInvForm] = useState<any>({})
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<SKU | null>(null)
+  const [lightboxSku, setLightboxSku] = useState<SKU | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadAll() }, [])
 
@@ -98,6 +98,8 @@ export default function SKUsPage() {
   function openNewSku() {
     setSkuForm(emptySkuForm)
     setEditSkuId(null)
+    setImageFile(null)
+    setImagePreview(null)
     setSkuModal(true)
   }
 
@@ -117,6 +119,8 @@ export default function SKUsPage() {
       use_existing_product: true,
     })
     setEditSkuId(sku.id)
+    setImageFile(null)
+    setImagePreview(sku.image_url || null)
     setSkuModal(true)
   }
 
@@ -134,22 +138,39 @@ export default function SKUsPage() {
     setInvModal(sku)
   }
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFile(file)
+    const reader = new FileReader()
+    reader.onload = ev => setImagePreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  async function uploadImage(skuId: string): Promise<string | null> {
+    if (!imageFile) return null
+    setUploadingImage(true)
+    const supabase = createClient()
+    const ext = imageFile.name.split(".").pop()
+    const path = `skus/${skuId}.${ext}`
+    const { error } = await supabase.storage.from("product-images").upload(path, imageFile, { upsert: true })
+    if (error) { setUploadingImage(false); return null }
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path)
+    setUploadingImage(false)
+    return data.publicUrl
+  }
+
   async function handleSaveSku() {
     setSaving(true)
     const supabase = createClient()
 
     let productId = skuForm.product_id
-
-    // Create new product if needed
     if (!skuForm.use_existing_product && skuForm.new_product_name) {
-      const { data: newProduct } = await supabase
-        .from("products")
-        .insert({ name: skuForm.new_product_name, category: skuForm.new_product_category, is_active: true })
-        .select("id").single()
+      const { data: newProduct } = await supabase.from("products").insert({ name: skuForm.new_product_name, category: skuForm.new_product_category, is_active: true }).select("id").single()
       if (newProduct) productId = newProduct.id
     }
 
-    const payload = {
+    const payload: any = {
       sku_code: skuForm.sku_code,
       name: skuForm.name,
       description: skuForm.description || null,
@@ -163,16 +184,23 @@ export default function SKUsPage() {
       updated_at: new Date().toISOString(),
     }
 
+    let skuId = editSkuId
+
     if (editSkuId) {
       await supabase.from("skus").update(payload).eq("id", editSkuId)
     } else {
       const { data: newSku } = await supabase.from("skus").insert(payload).select("id").single()
       if (newSku) {
-        await supabase.from("inventory").insert({
-          sku_id: newSku.id,
-          qty_on_hand: 0, qty_reserved: 0, qty_on_order: 0,
-          min_stock: 5, max_stock: 50, reorder_qty: 20,
-        })
+        skuId = newSku.id
+        await supabase.from("inventory").insert({ sku_id: newSku.id, qty_on_hand: 0, qty_reserved: 0, qty_on_order: 0, min_stock: 5, max_stock: 50, reorder_qty: 20 })
+      }
+    }
+
+    // Upload image if new file selected
+    if (imageFile && skuId) {
+      const imageUrl = await uploadImage(skuId)
+      if (imageUrl) {
+        await supabase.from("skus").update({ image_url: imageUrl }).eq("id", skuId)
       }
     }
 
@@ -196,29 +224,18 @@ export default function SKUsPage() {
       reorder_qty: parseInt(invForm.reorder_qty) || 0,
       updated_at: new Date().toISOString(),
     }
-
     if (inv) {
       await supabase.from("inventory").update(payload).eq("id", inv.id)
     } else {
       await supabase.from("inventory").insert(payload)
     }
-
-    // Log the adjustment
     if (invForm.adjustment_reason && inv) {
       const oldQty = inv.qty_on_hand
       const newQty = parseInt(invForm.qty_on_hand) || 0
       if (oldQty !== newQty) {
-        await supabase.from("inventory_transactions").insert({
-          sku_id: invModal.id,
-          transaction_type: "adjustment",
-          quantity_change: newQty - oldQty,
-          quantity_before: oldQty,
-          quantity_after: newQty,
-          notes: invForm.adjustment_reason,
-        })
+        await supabase.from("inventory_transactions").insert({ sku_id: invModal.id, transaction_type: "adjustment", quantity_change: newQty - oldQty, quantity_before: oldQty, quantity_after: newQty, notes: invForm.adjustment_reason })
       }
     }
-
     setSaving(false)
     setInvModal(null)
     loadAll()
@@ -226,6 +243,10 @@ export default function SKUsPage() {
 
   async function handleDeleteSku(sku: SKU) {
     const supabase = createClient()
+    if (sku.image_url) {
+      const path = sku.image_url.split("/product-images/")[1]
+      if (path) await supabase.storage.from("product-images").remove([path])
+    }
     await supabase.from("inventory").delete().eq("sku_id", sku.id)
     await supabase.from("skus").delete().eq("id", sku.id)
     setDeleteConfirm(null)
@@ -294,8 +315,8 @@ export default function SKUsPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#1A1E22" }}>
-                {["SKU Code", "Name", "Category", "On Hand", "Min/Max", "Unit Cost", "MSRP", "Status", ""].map(h => (
-                  <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#555", padding: "10px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>{h}</th>
+                {["", "SKU Code", "Name", "Category", "On Hand", "Min/Max", "Unit Cost", "MSRP", "Status", ""].map((h, i) => (
+                  <th key={i} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#555", padding: "10px 12px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -313,36 +334,52 @@ export default function SKUsPage() {
                     onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)", letterSpacing: "0.04em" }}>{sku.sku_code}</td>
-                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sku.name}</td>
-                    <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    {/* Thumbnail */}
+                    <td style={{ padding: "8px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)", width: "48px" }}>
+                      {sku.image_url ? (
+                        <div onClick={() => setLightboxSku(sku)} style={{ width: "40px", height: "40px", cursor: "zoom-in", position: "relative", flexShrink: 0 }}>
+                          <img src={sku.image_url} alt={sku.name} style={{ width: "40px", height: "40px", objectFit: "cover", display: "block" }} />
+                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0)", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.15s" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = "1"; (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.4)" }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = "0"; (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0)" }}
+                          >
+                            <ZoomIn size={16} color="#fff" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ width: "40px", height: "40px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Image size={14} color="#333" />
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)", letterSpacing: "0.04em" }}>{sku.sku_code}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sku.name}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: cc.color, background: cc.bg, padding: "2px 7px" }}>
                         {cat.replace("_", " ")}
                       </span>
                     </td>
-                    <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: isCritical ? "#A91E22" : isLow ? "#C4A93A" : "#5A9E5A" }}>{qtyOnHand}</span>
-                        <button onClick={() => openInvEdit(sku)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", padding: "2px" }} title="Edit inventory">
-                          <Pencil size={11} />
-                        </button>
+                        <button onClick={() => openInvEdit(sku)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", padding: "2px" }} title="Edit inventory"><Pencil size={11} /></button>
                       </div>
                     </td>
-                    <td style={{ padding: "10px 14px", fontSize: "11px", color: "#555", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    <td style={{ padding: "10px 12px", fontSize: "11px", color: "#555", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       {inv ? `${inv.min_stock} / ${inv.max_stock}` : "—"}
                     </td>
-                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#AAA", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    <td style={{ padding: "10px 12px", fontSize: "12px", color: "#AAA", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       {sku.unit_cost ? `$${sku.unit_cost.toFixed(2)}` : "—"}
                     </td>
-                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    <td style={{ padding: "10px 12px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       {sku.msrp ? `$${sku.msrp.toFixed(2)}` : "—"}
                     </td>
-                    <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: sku.is_active ? "#5A9E5A" : "#555", background: sku.is_active ? "rgba(90,158,90,0.1)" : "rgba(136,136,136,0.1)", padding: "2px 7px" }}>
                         {sku.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                    <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button onClick={() => openEditSku(sku)} style={{ background: "none", border: "none", color: "#444", cursor: "pointer", padding: "2px" }}><Pencil size={13} /></button>
                         <button onClick={() => setDeleteConfirm(sku)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", padding: "2px" }}><Trash2 size={13} /></button>
@@ -356,10 +393,26 @@ export default function SKUsPage() {
         </div>
       )}
 
+      {/* Lightbox */}
+      {lightboxSku && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400 }} onClick={() => setLightboxSku(null)}>
+          <div style={{ maxWidth: "800px", maxHeight: "80vh", width: "100%", padding: "20px" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <div>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", margin: "0 0 4px" }}>{lightboxSku.sku_code}</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, color: "#fff", margin: 0 }}>{lightboxSku.name}</p>
+              </div>
+              <button onClick={() => setLightboxSku(null)} style={{ background: "none", border: "none", color: "#666", cursor: "pointer" }}><X size={24} /></button>
+            </div>
+            <img src={lightboxSku.image_url!} alt={lightboxSku.name} style={{ width: "100%", maxHeight: "65vh", objectFit: "contain", display: "block" }} />
+          </div>
+        </div>
+      )}
+
       {/* Add/Edit SKU Modal */}
       {skuModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={() => setSkuModal(false)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", width: "100%", maxWidth: "640px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", width: "100%", maxWidth: "680px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#161A1D", position: "sticky", top: 0, zIndex: 10 }}>
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", margin: "0 0 4px" }}>Inventory</p>
@@ -369,6 +422,40 @@ export default function SKUsPage() {
             </div>
 
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
+              {/* Photo upload */}
+              <div>
+                <label style={labelStyle}>Product Photo</label>
+                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                  {/* Preview */}
+                  <div style={{ width: "100px", height: "100px", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <Image size={28} color="#333" />
+                    )}
+                  </div>
+                  {/* Upload area */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ flex: 1, border: "1px dashed rgba(255,255,255,0.12)", padding: "16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", cursor: "pointer", minHeight: "100px", background: "#13161A" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(169,30,34,0.5)"}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"}
+                  >
+                    <Upload size={20} color="#444" />
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#555", margin: 0 }}>
+                      {imageFile ? imageFile.name : "Click to upload photo"}
+                    </p>
+                    <p style={{ fontSize: "10px", color: "#333", fontFamily: "'Barlow', sans-serif", margin: 0 }}>JPG, PNG, WebP — max 5MB</p>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: "none" }} />
+                </div>
+                {imagePreview && (
+                  <button onClick={() => { setImageFile(null); setImagePreview(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "none", cursor: "pointer", marginTop: "6px", padding: 0 }}>
+                    Remove photo
+                  </button>
+                )}
+              </div>
 
               {/* SKU code + name */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "12px" }}>
@@ -415,29 +502,36 @@ export default function SKUsPage() {
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Pricing</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
                   {[
-                    { label: "Unit Cost ($)", key: "unit_cost", placeholder: "0.00" },
-                    { label: "MSRP ($)", key: "msrp", placeholder: "0.00" },
-                    { label: "Wholesale ($)", key: "wholesaler_price", placeholder: "0.00" },
-                    { label: "Fitter Price ($)", key: "fitter_price", placeholder: "0.00" },
+                    { label: "Unit Cost ($)", key: "unit_cost" },
+                    { label: "MSRP ($)", key: "msrp" },
+                    { label: "Wholesale ($)", key: "wholesaler_price" },
+                    { label: "Fitter Price ($)", key: "fitter_price" },
                   ].map(f => (
                     <div key={f.key}>
                       <label style={labelStyle}>{f.label}</label>
-                      <input type="number" style={inputStyle} placeholder={f.placeholder} value={skuForm[f.key]} onChange={e => setSkuForm((form: any) => ({ ...form, [f.key]: e.target.value }))} />
+                      <input type="number" style={inputStyle} placeholder="0.00" value={skuForm[f.key]} onChange={e => setSkuForm((form: any) => ({ ...form, [f.key]: e.target.value }))} />
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Other */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>Lead Time (days)</label>
                   <input type="number" style={inputStyle} placeholder="0" value={skuForm.lead_time_days} onChange={e => setSkuForm((f: any) => ({ ...f, lead_time_days: e.target.value }))} />
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "24px" }}>
-                  <input type="checkbox" id="is_active" checked={skuForm.is_active} onChange={e => setSkuForm((f: any) => ({ ...f, is_active: e.target.checked }))} style={{ cursor: "pointer" }} />
-                  <label htmlFor="is_active" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Active SKU</label>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "24px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <input type="checkbox" id="is_active" checked={skuForm.is_active} onChange={e => setSkuForm((f: any) => ({ ...f, is_active: e.target.checked }))} style={{ cursor: "pointer" }} />
+                    <label htmlFor="is_active" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Active SKU</label>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <input type="checkbox" id="is_orderable" checked={skuForm.is_orderable ?? true} onChange={e => setSkuForm((f: any) => ({ ...f, is_orderable: e.target.checked }))} style={{ cursor: "pointer" }} />
+                    <label htmlFor="is_orderable" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Visible in dealer portal</label>
+                  </div>
                 </div>
+                
               </div>
 
               <div>
@@ -445,8 +539,8 @@ export default function SKUsPage() {
                 <textarea style={{ ...inputStyle, minHeight: "70px", resize: "vertical" }} placeholder="Optional description..." value={skuForm.description} onChange={e => setSkuForm((f: any) => ({ ...f, description: e.target.value }))} />
               </div>
 
-              <button onClick={handleSaveSku} disabled={saving || !skuForm.sku_code || !skuForm.name} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving || !skuForm.sku_code || !skuForm.name ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: saving ? "not-allowed" : "pointer" }}>
-                {saving ? "Saving..." : editSkuId ? "Update SKU →" : "Add SKU →"}
+              <button onClick={handleSaveSku} disabled={saving || uploadingImage || !skuForm.sku_code || !skuForm.name} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving || uploadingImage || !skuForm.sku_code || !skuForm.name ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: "pointer" }}>
+                {uploadingImage ? "Uploading photo..." : saving ? "Saving..." : editSkuId ? "Update SKU →" : "Add SKU →"}
               </button>
             </div>
           </div>
@@ -458,14 +552,16 @@ export default function SKUsPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={() => setInvModal(null)}>
           <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #6A9CC8", width: "100%", maxWidth: "500px" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#161A1D" }}>
-              <div>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#6A9CC8", margin: "0 0 4px" }}>Adjust Inventory</p>
-                <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>{invModal.sku_code}</h2>
-                <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{invModal.name}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                {invModal.image_url && <img src={invModal.image_url} alt={invModal.name} style={{ width: "44px", height: "44px", objectFit: "cover" }} />}
+                <div>
+                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#6A9CC8", margin: "0 0 4px" }}>Adjust Inventory</p>
+                  <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>{invModal.sku_code}</h2>
+                  <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{invModal.name}</p>
+                </div>
               </div>
               <button onClick={() => setInvModal(null)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><X size={20} /></button>
             </div>
-
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                 {[
@@ -479,7 +575,6 @@ export default function SKUsPage() {
                   </div>
                 ))}
               </div>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                 {[
                   { label: "Min Stock", key: "min_stock" },
@@ -492,16 +587,13 @@ export default function SKUsPage() {
                   </div>
                 ))}
               </div>
-
               <div>
                 <label style={labelStyle}>Adjustment Reason (optional)</label>
-                <input style={inputStyle} placeholder="e.g. Physical count, Received shipment, Write-off..." value={invForm.adjustment_reason} onChange={e => setInvForm((iv: any) => ({ ...iv, adjustment_reason: e.target.value }))} />
-                <p style={{ fontSize: "11px", color: "#444", fontFamily: "'Barlow', sans-serif", marginTop: "4px" }}>Logged in inventory transaction history</p>
+                <input style={inputStyle} placeholder="e.g. Physical count, Received shipment..." value={invForm.adjustment_reason} onChange={e => setInvForm((iv: any) => ({ ...iv, adjustment_reason: e.target.value }))} />
               </div>
-
               <div style={{ display: "flex", gap: "10px" }}>
                 <button onClick={() => setInvModal(null)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>Cancel</button>
-                <button onClick={handleSaveInventory} disabled={saving} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving ? "#333" : "#6A9CC8", border: "none", padding: "12px", cursor: saving ? "not-allowed" : "pointer" }}>
+                <button onClick={handleSaveInventory} disabled={saving} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving ? "#333" : "#6A9CC8", border: "none", padding: "12px", cursor: "pointer" }}>
                   {saving ? "Saving..." : "Save Inventory →"}
                 </button>
               </div>
@@ -515,7 +607,7 @@ export default function SKUsPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300 }} onClick={() => setDeleteConfirm(null)}>
           <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", padding: "32px", width: "380px" }} onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", color: "#fff", margin: "0 0 8px" }}>Delete SKU?</h2>
-            <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 6px" }}>Delete <strong style={{ color: "#fff" }}>{deleteConfirm.sku_code}</strong>? This will also remove its inventory record.</p>
+            <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 6px" }}>Delete <strong style={{ color: "#fff" }}>{deleteConfirm.sku_code}</strong>? This will also remove its inventory record and photo.</p>
             <p style={{ fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px" }}>This cannot be undone.</p>
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px", cursor: "pointer" }}>Cancel</button>

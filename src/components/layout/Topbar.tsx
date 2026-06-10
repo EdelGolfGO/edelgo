@@ -98,7 +98,7 @@ export default function Topbar() {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 24px",
-        height: "52px",
+        height: "80px",
         width: "100%",
         flexShrink: 0,
         position: "relative",
@@ -106,7 +106,7 @@ export default function Topbar() {
       }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => router.push("/dashboard")}>
-          <img src="/edelfit-logo.png" alt="EdelFit" style={{ height: "30px", width: "auto", filter: "invert(1)" }} />
+          <img src="/edelfit-logo.png" alt="EdelFit" style={{ height: "55px", width: "auto", filter: "invert(1)" }} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
