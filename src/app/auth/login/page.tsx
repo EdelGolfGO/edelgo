@@ -29,7 +29,8 @@ export default function LoginPage() {
 
   // Signup state
   const [signupForm, setSignupForm] = useState({
-    full_name: "",
+    first_name: "",
+    last_name: "",
     company: "",
     email: "",
     phone: "",
@@ -93,8 +94,11 @@ export default function LoginPage() {
   function handleNextStep(e: React.FormEvent) {
     e.preventDefault()
     setSignupError("")
-    if (!signupForm.full_name.trim()) { setSignupError("Please enter your name."); return }
+    if (!signupForm.first_name.trim()) { setSignupError("Please enter your first name."); return }
+    if (!signupForm.last_name.trim()) { setSignupError("Please enter your last name."); return }
     if (!signupForm.email.trim()) { setSignupError("Please enter your email."); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupForm.email)) { setSignupError("Please enter a valid email address."); return }
+    if (signupForm.phone && !/^[+\d][\d\s\-().]{6,}$/.test(signupForm.phone)) { setSignupError("Please enter a valid phone number."); return }
     if (ADMIN_EMAILS.includes(signupForm.email.toLowerCase())) {
       setSignupError("This email is registered as an EdelFit admin. Please use the Sign In tab.")
       return
@@ -110,12 +114,13 @@ export default function LoginPage() {
 
     setSignupLoading(true)
 
+    const fullName = `${signupForm.first_name.trim()} ${signupForm.last_name.trim()}`
     const { data, error } = await supabase.auth.signUp({
       email: signupForm.email,
       password: signupForm.password,
       options: {
         data: {
-          full_name: signupForm.full_name,
+          full_name: fullName,
           company: signupForm.company,
           role: "dealer",
         }
@@ -135,7 +140,7 @@ export default function LoginPage() {
       // Update profile with all dealer info
       await supabase.from("profiles").update({
         email: signupForm.email,
-        full_name: signupForm.full_name,
+        full_name: fullName,
         role: "dealer",
         is_approved: false,
         company: signupForm.company,
@@ -151,8 +156,8 @@ export default function LoginPage() {
       // Admin notification
       await supabase.from("portal_notifications").insert({
         type: "new_dealer_signup",
-        title: `New Dealer Signup: ${signupForm.full_name}`,
-        message: `${signupForm.full_name}${signupForm.company ? ` from ${signupForm.company}` : ""} (${signupForm.email}) has requested access. ${signupForm.city ? `Located in ${signupForm.city}, ${signupForm.state}.` : ""}`,
+        title: `New Dealer Signup: ${fullName}`,
+        message: `${fullName}${signupForm.company ? ` from ${signupForm.company}` : ""} (${signupForm.email}) has requested access. ${signupForm.city ? `Located in ${signupForm.city}, ${signupForm.state}.` : ""}`,
       })
     }
 
@@ -235,12 +240,19 @@ export default function LoginPage() {
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: "4px 0 -4px" }}>Contact Info</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   <div>
-                    <label style={labelStyle}>Your Name *</label>
-                    <input style={smallInputStyle} placeholder="John Smith" value={signupForm.full_name} onChange={e => updateSignup("full_name", e.target.value)} required />
+                    <label style={labelStyle}>First Name *</label>
+                    <input style={smallInputStyle} placeholder="John" value={signupForm.first_name} onChange={e => updateSignup("first_name", e.target.value)} required />
                   </div>
                   <div>
-                    <label style={labelStyle}>Phone</label>
-                    <input style={smallInputStyle} placeholder="303-555-0100" value={signupForm.phone} onChange={e => updateSignup("phone", e.target.value)} />
+                    <label style={labelStyle}>Last Name *</label>
+                    <input style={smallInputStyle} placeholder="Smith" value={signupForm.last_name} onChange={e => updateSignup("last_name", e.target.value)} required />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone *</label>
+                    <input style={smallInputStyle} placeholder="+1 303-555-0100" value={signupForm.phone} onChange={e => updateSignup("phone", e.target.value)} required />
+                    {signupForm.phone && !/^[+\d][\d\s\-().]{6,}$/.test(signupForm.phone) && (
+                      <p style={{ fontSize: "10px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", marginTop: "3px" }}>Enter a valid phone number</p>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -303,7 +315,7 @@ export default function LoginPage() {
               <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 <div style={{ background: "#13161A", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 14px", marginBottom: "4px" }}>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#5A9E5A", margin: "0 0 4px" }}>✓ Account Info Saved</p>
-                  <p style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{signupForm.full_name} · {signupForm.email}{signupForm.company ? ` · ${signupForm.company}` : ""}</p>
+                  <p style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{signupForm.first_name} {signupForm.last_name} · {signupForm.email}{signupForm.company ? ` · ${signupForm.company}` : ""}</p>
                 </div>
 
                 <div>

@@ -19,7 +19,12 @@ export default function PortalOrdersPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from("b2b_orders")
-      .select("*, items:b2b_order_items(*)")
+      .select(`
+        *,
+        items:b2b_order_items(
+          id, sku_code, product_name, quantity, unit_price, total_price
+        )
+      `)
       .order("created_at", { ascending: false })
     if (data) setOrders(data)
     setLoading(false)
