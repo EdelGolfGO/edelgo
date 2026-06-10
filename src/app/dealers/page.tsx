@@ -74,7 +74,26 @@ export default function DealersPage() {
   }
 
   function openEdit(dealer: Dealer) {
-    setForm({ ...dealer, credit_limit: dealer.credit_limit?.toString() || "", discount_percent: dealer.discount_percent?.toString() || "" })
+    setForm({
+      name: dealer.name || "",
+      company: dealer.company || "",
+      email: dealer.email || "",
+      phone: dealer.phone || "",
+      address_line1: dealer.address_line1 || "",
+      address_line2: dealer.address_line2 || "",
+      city: dealer.city || "",
+      state: dealer.state || "",
+      zip: dealer.zip || "",
+      country: dealer.country || "US",
+      dealer_type: dealer.dealer_type || "wholesale",
+      status: dealer.status || "active",
+      payment_terms: dealer.payment_terms || "net30",
+      credit_limit: dealer.credit_limit?.toString() || "",
+      discount_percent: dealer.discount_percent?.toString() || "",
+      tax_exempt: dealer.tax_exempt || false,
+      tax_id: dealer.tax_id || "",
+      notes: dealer.notes || "",
+    })
     setEditId(dealer.id)
     setModal(true)
   }
