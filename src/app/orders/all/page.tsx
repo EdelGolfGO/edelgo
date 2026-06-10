@@ -17,12 +17,15 @@ type OrderItem = {
   configuration: any
 }
 
+type OrderType = "all" | "wholesale" | "factory" | "international" | "misc"
+
 type Order = {
   id: string
   order_number: string
   dealer_id: string
   dealer_name: string
   status: OrderStatus
+  order_type: string
   total_amount: number
   notes: string
   submitted_at: string
@@ -102,6 +105,7 @@ export default function AllOrdersPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [filter, setFilter] = useState<OrderStatus | "all">("all")
   const [search, setSearch] = useState("")
+  const [orderType, setOrderType] = useState<OrderType>("all")
   const [editModal, setEditModal] = useState<Order | null>(null)
   const [editItems, setEditItems] = useState<OrderItem[]>([])
   const [editNotes, setEditNotes] = useState("")
@@ -206,6 +210,7 @@ export default function AllOrdersPage() {
 
   const filtered = orders.filter(o => {
     if (filter !== "all" && o.status !== filter) return false
+    if (orderType !== "all" && (o.order_type || "wholesale") !== orderType) return false
     if (search && !o.order_number?.toLowerCase().includes(search.toLowerCase()) && !o.dealer_name?.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
@@ -262,6 +267,16 @@ export default function AllOrdersPage() {
         ))}
       </div>
 
+      {/* Order type toggles */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#444" }}>Type:</span>
+        {(["all", "wholesale", "factory", "international", "misc"] as const).map(t => (
+          <button key={t} onClick={() => setOrderType(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "5px 12px", cursor: "pointer", border: "none", borderRadius: "0", background: orderType === t ? "#A91E22" : "transparent", color: orderType === t ? "#fff" : "#555", outline: orderType === t ? "none" : "1px solid #2A2A2A" }}>
+            {t === "all" ? `All (${orders.length})` : `${t.charAt(0).toUpperCase() + t.slice(1)} (${orders.filter(o => (o.order_type || "wholesale") === t).length})`}
+          </button>
+        ))}
+      </div>
+
       {/* Orders list */}
       {loading ? (
         <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading orders...</div>
@@ -287,8 +302,11 @@ export default function AllOrdersPage() {
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#A91E22", margin: 0, letterSpacing: "0.05em" }}>{order.order_number || "—"}</p>
                     <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{order.dealer_name}</p>
                   </div>
-                  <div style={{ flex: "0 0 140px" }}>
+                  <div style={{ flex: "0 0 140px", display: "flex", flexDirection: "column", gap: "4px" }}>
                     <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: statusInfo.color, background: statusInfo.bg, padding: "3px 10px" }}>{statusInfo.label}</span>
+                    {order.order_type && order.order_type !== "wholesale" && (
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "2px 8px", alignSelf: "flex-start" }}>{order.order_type}</span>
+                    )}
                   </div>
                   <div style={{ flex: 1, display: "flex", gap: "24px" }}>
                     <div>

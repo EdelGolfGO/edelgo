@@ -47,6 +47,7 @@ export default function NewOrderPage() {
   const [skus, setSkus] = useState<SKU[]>([])
   const [dealers, setDealers] = useState<Dealer[]>([])
   const [selectedDealer, setSelectedDealer] = useState<Dealer | null>(null)
+  const [orderTypeSelection, setOrderTypeSelection] = useState("wholesale")
   const [manualEntry, setManualEntry] = useState(false)
   const [manualName, setManualName] = useState("")
   const [manualCompany, setManualCompany] = useState("")
@@ -138,6 +139,7 @@ export default function NewOrderPage() {
       dealer_id: manualEntry ? null : selectedDealer?.id || null,
       dealer_name: dealerName,
       status: "approved",
+      order_type: orderTypeSelection,
       total_amount: total,
       notes: [notes, extraNotes].filter(Boolean).join("\n"),
       submitted_at: new Date().toISOString(),
@@ -206,7 +208,17 @@ export default function NewOrderPage() {
       {/* Dealer selector */}
       <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "16px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: 0 }}>Order For</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: 0 }}>Order For</p>
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#444" }}>Type:</span>
+              {(["wholesale", "factory", "international", "misc"] as const).map(t => (
+                <button key={t} onClick={() => setOrderTypeSelection(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer", border: "none", background: orderTypeSelection === t ? "#A91E22" : "transparent", color: orderTypeSelection === t ? "#fff" : "#555", outline: orderTypeSelection === t ? "none" : "1px solid #2A2A2A" }}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button onClick={() => setManualEntry(false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !manualEntry ? "#fff" : "#555", background: !manualEntry ? "#A91E22" : "transparent", border: !manualEntry ? "none" : "1px solid #333", padding: "5px 12px", cursor: "pointer" }}>
               Existing Dealer

@@ -8,24 +8,27 @@ import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
   Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch, Upload,
-  UserCheck,DollarSign, User
+  UserCheck,
 } from "lucide-react"
 
 export default function Sidebar() {
   const pathname = usePathname()
   const [pendingCount, setPendingCount] = useState(0)
   const [notifCount, setNotifCount] = useState(0)
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
 
   useEffect(() => { loadCounts() }, [])
 
   async function loadCounts() {
     const supabase = createClient()
-    const [pendingResult, notifResult] = await Promise.all([
+    const [pendingResult, notifResult, pendingOrdersResult] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact" }).eq("role", "dealer").eq("is_approved", false),
       supabase.from("portal_notifications").select("id", { count: "exact" }).eq("is_read", false),
+      supabase.from("b2b_orders").select("id", { count: "exact" }).eq("status", "pending"),
     ])
     setPendingCount(pendingResult.count || 0)
     setNotifCount(notifResult.count || 0)
+    setPendingOrdersCount(pendingOrdersResult.count || 0)
   }
 
   const nav = [
@@ -33,7 +36,7 @@ export default function Sidebar() {
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     ]},
     { section: "Orders", items: [
-      { label: "All Orders", href: "/orders/all", icon: ClipboardList },
+      { label: "All Orders", href: "/orders/all", icon: ClipboardList, badge: pendingOrdersCount },
       { label: "New Order", href: "/orders/new", icon: Plus },
       { label: "Pending Review", href: "/orders/pending", icon: Clock },
       { label: "Drafts", href: "/orders/drafts", icon: FileText },
@@ -51,7 +54,7 @@ export default function Sidebar() {
       { label: "SKUs", href: "/inventory/skus", icon: List },
       { label: "Products", href: "/inventory/products", icon: Boxes },
       { label: "Shopify Import", href: "/inventory/import", icon: Upload },
-      { label: "Pricing Tiers", href: "/inventory/pricing", icon: DollarSign },
+      { label: "Pricing Tiers", href: "/inventory/pricing", icon: BarChart2 },
       { label: "COGS Calculator", href: "/inventory/cogs", icon: BarChart2 },
     ]},
     { section: "Accounts", items: [
