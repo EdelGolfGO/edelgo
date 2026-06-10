@@ -178,8 +178,12 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "36px" }}>
-          <img src="/edelfit-logo.png" alt="EdelFit" style={{ height: "36px", width: "auto", filter: "invert(1)" }} />
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#333", marginTop: "10px" }}>Operations + Dealer Portal</p>
+          <img
+            src="/edelfit-logo.png"
+            alt="EdelFit"
+            style={{ height: "90px", width: "auto", filter: "invert(1)", display: "block", margin: "0 auto 16px" }}
+          />
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#333", marginTop: "4px" }}>Operations + Dealer Portal</p>
         </div>
 
         <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22" }}>
