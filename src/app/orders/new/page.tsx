@@ -39,11 +39,27 @@ const CATEGORY_LABELS: Record<string, string> = {
   component: "Components",
 }
 
+const inputStyle = { width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
+const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#555", marginBottom: "5px" }
+
 export default function NewOrderPage() {
   const router = useRouter()
   const [skus, setSkus] = useState<SKU[]>([])
   const [dealers, setDealers] = useState<Dealer[]>([])
   const [selectedDealer, setSelectedDealer] = useState<Dealer | null>(null)
+  const [manualEntry, setManualEntry] = useState(false)
+  const [manualName, setManualName] = useState("")
+  const [manualCompany, setManualCompany] = useState("")
+  const [manualEmail, setManualEmail] = useState("")
+  const [manualPO, setManualPO] = useState("")
+  const [manualAddress1, setManualAddress1] = useState("")
+  const [manualAddress2, setManualAddress2] = useState("")
+  const [manualCity, setManualCity] = useState("")
+  const [manualState, setManualState] = useState("")
+  const [manualPostal, setManualPostal] = useState("")
+  const [manualCountry, setManualCountry] = useState("US")
+  const [manualAddressType, setManualAddressType] = useState("commercial")
+  const [manualInstructions, setManualInstructions] = useState("")
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [activeCategory, setActiveCategory] = useState("")
   const [search, setSearch] = useState("")
@@ -102,13 +118,28 @@ export default function NewOrderPage() {
     const orderNumber = `EF-${Date.now().toString().slice(-6)}`
     const total = getTotal()
 
+    const dealerName = manualEntry
+      ? `${manualName}${manualCompany ? ` — ${manualCompany}` : ""}`
+      : selectedDealer?.company || selectedDealer?.name || "Walk-in / Direct"
+
+    const addressLine = manualEntry && manualAddress1
+      ? `${manualAddress1}${manualAddress2 ? `, ${manualAddress2}` : ""}, ${manualCity}, ${manualState} ${manualPostal}, ${manualCountry} (${manualAddressType})`
+      : ""
+
+    const extraNotes = [
+      manualEmail ? `Email: ${manualEmail}` : "",
+      manualPO ? `Customer PO: ${manualPO}` : "",
+      addressLine ? `Ship to: ${addressLine}` : "",
+      manualInstructions ? `Special instructions: ${manualInstructions}` : "",
+    ].filter(Boolean).join("\n")
+
     const { data: order, error } = await supabase.from("b2b_orders").insert({
       order_number: orderNumber,
-      dealer_id: selectedDealer?.id || null,
-      dealer_name: selectedDealer?.company || selectedDealer?.name || "Walk-in / Direct",
+      dealer_id: manualEntry ? null : selectedDealer?.id || null,
+      dealer_name: dealerName,
       status: "approved",
       total_amount: total,
-      notes,
+      notes: [notes, extraNotes].filter(Boolean).join("\n"),
       submitted_at: new Date().toISOString(),
       approved_at: new Date().toISOString(),
     }).select("id").single()
@@ -132,7 +163,6 @@ export default function NewOrderPage() {
     setSubmitted(true)
   }
 
-  // Admin sees all orderable SKUs by default, or all if toggled
   const displaySkus = showAllSkus ? skus : skus.filter((s: any) => s.is_orderable !== false)
   const categories = [...new Set(displaySkus.map(s => s.product?.category).filter(Boolean))]
   const filteredSkus = displaySkus.filter(s => {
@@ -149,7 +179,7 @@ export default function NewOrderPage() {
         <p style={{ fontSize: "14px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Order has been created and auto-approved.</p>
         <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
           <button onClick={() => router.push("/orders/all")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>View All Orders</button>
-          <button onClick={() => { setSubmitted(false); setOrderItems([]) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px 20px", cursor: "pointer" }}>New Order</button>
+          <button onClick={() => { setSubmitted(false); setOrderItems([]); setManualName(""); setManualCompany(""); setManualEmail(""); setManualPO(""); setManualAddress1(""); setManualAddress2(""); setManualCity(""); setManualState(""); setManualPostal(""); setManualCountry("US"); setManualAddressType("commercial"); setManualInstructions(""); setSelectedDealer(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px 20px", cursor: "pointer" }}>New Order</button>
         </div>
       </div>
     )
@@ -175,9 +205,20 @@ export default function NewOrderPage() {
 
       {/* Dealer selector */}
       <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "16px 20px" }}>
-        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "10px" }}>Order For</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-          <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: 0 }}>Order For</p>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={() => setManualEntry(false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !manualEntry ? "#fff" : "#555", background: !manualEntry ? "#A91E22" : "transparent", border: !manualEntry ? "none" : "1px solid #333", padding: "5px 12px", cursor: "pointer" }}>
+              Existing Dealer
+            </button>
+            <button onClick={() => setManualEntry(true)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: manualEntry ? "#fff" : "#555", background: manualEntry ? "#A91E22" : "transparent", border: manualEntry ? "none" : "1px solid #333", padding: "5px 12px", cursor: "pointer" }}>
+              One-Time / Manual
+            </button>
+          </div>
+        </div>
+
+        {!manualEntry ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <select
               style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: selectedDealer ? "#fff" : "#555", padding: "10px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }}
               value={selectedDealer?.id || ""}
@@ -186,18 +227,82 @@ export default function NewOrderPage() {
                 setSelectedDealer(dealer || null)
               }}
             >
-              <option value="">Walk-in / Direct / No dealer</option>
+              <option value="">Select a dealer...</option>
               {dealers.map(d => <option key={d.id} value={d.id}>{d.company || d.name}</option>)}
             </select>
+            {selectedDealer && (
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "4px 10px" }}>
+                  {selectedDealer.pricing_tier || "Wholesaler"} pricing
+                </span>
+              </div>
+            )}
           </div>
-          {selectedDealer && (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "4px 10px" }}>
-                {selectedDealer.pricing_tier || "Wholesaler"} pricing
-              </span>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {/* Row 1: Name, Company, Email, PO Number */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
+              <div>
+                <label style={labelStyle}>Customer Name *</label>
+                <input style={inputStyle} placeholder="John Smith" value={manualName} onChange={e => setManualName(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Company</label>
+                <input style={inputStyle} placeholder="Golf Galaxy" value={manualCompany} onChange={e => setManualCompany(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Email (optional)</label>
+                <input style={inputStyle} placeholder="john@company.com" value={manualEmail} onChange={e => setManualEmail(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>PO Number (optional)</label>
+                <input style={inputStyle} placeholder="PO-12345" value={manualPO} onChange={e => setManualPO(e.target.value)} />
+              </div>
             </div>
-          )}
-        </div>
+            {/* Row 2: Address */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div>
+                <label style={labelStyle}>Address Line 1</label>
+                <input style={inputStyle} placeholder="123 Main St" value={manualAddress1} onChange={e => setManualAddress1(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Address Line 2 (optional)</label>
+                <input style={inputStyle} placeholder="Suite 100" value={manualAddress2} onChange={e => setManualAddress2(e.target.value)} />
+              </div>
+            </div>
+            {/* Row 3: City, State, Postal, Country, Type */}
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: "12px" }}>
+              <div>
+                <label style={labelStyle}>City</label>
+                <input style={inputStyle} placeholder="Denver" value={manualCity} onChange={e => setManualCity(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>State / Province</label>
+                <input style={inputStyle} placeholder="CO" value={manualState} onChange={e => setManualState(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Postal Code</label>
+                <input style={inputStyle} placeholder="80202" value={manualPostal} onChange={e => setManualPostal(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Country</label>
+                <input style={inputStyle} placeholder="US" value={manualCountry} onChange={e => setManualCountry(e.target.value)} />
+              </div>
+              <div>
+                <label style={labelStyle}>Address Type</label>
+                <select style={{ ...inputStyle, cursor: "pointer" }} value={manualAddressType} onChange={e => setManualAddressType(e.target.value)}>
+                  <option value="commercial">Commercial</option>
+                  <option value="residential">Residential</option>
+                </select>
+              </div>
+            </div>
+            {/* Special Instructions */}
+            <div>
+              <label style={labelStyle}>Special Instructions (optional)</label>
+              <textarea style={{ ...inputStyle, minHeight: "70px", resize: "vertical" }} placeholder="Any special instructions for this order..." value={manualInstructions} onChange={e => setManualInstructions(e.target.value)} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
@@ -304,12 +409,22 @@ export default function NewOrderPage() {
                 ))}
               </div>
               <div style={{ padding: "14px 16px", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+                {(manualEntry ? manualName : selectedDealer) && (
+                  <div style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)", padding: "8px 12px", marginBottom: "10px" }}>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#555", margin: "0 0 2px" }}>Order for</p>
+                    <p style={{ fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: "0 0 2px" }}>
+                      {manualEntry ? `${manualName}${manualCompany ? ` — ${manualCompany}` : ""}` : selectedDealer?.company || selectedDealer?.name}
+                    </p>
+                    {manualEntry && manualPO && <p style={{ fontSize: "11px", color: "#6A9CC8", fontFamily: "'Barlow Condensed', sans-serif", margin: "0 0 2px", fontWeight: 700, letterSpacing: "0.04em" }}>PO: {manualPO}</p>}
+                    {manualEntry && manualAddress1 && <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{manualCity}, {manualState} · {manualAddressType}</p>}
+                  </div>
+                )}
                 <textarea placeholder="Order notes..." value={notes} onChange={e => setNotes(e.target.value)} style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", resize: "none", minHeight: "50px", boxSizing: "border-box" as const, marginBottom: "12px" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
                   <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#666" }}>Order Total</span>
                   <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, color: "#fff" }}>${getTotal().toFixed(2)}</span>
                 </div>
-                <button onClick={handleSubmit} disabled={submitting} style={{ width: "100%", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: submitting ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: submitting ? "not-allowed" : "pointer" }}>
+                <button onClick={handleSubmit} disabled={submitting || (manualEntry && !manualName)} style={{ width: "100%", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: submitting || (manualEntry && !manualName) ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: submitting ? "not-allowed" : "pointer" }}>
                   {submitting ? "Creating..." : "Create Order →"}
                 </button>
                 <p style={{ fontSize: "10px", color: "#444", textAlign: "center", marginTop: "8px", fontFamily: "'Barlow', sans-serif" }}>Admin orders are auto-approved</p>
