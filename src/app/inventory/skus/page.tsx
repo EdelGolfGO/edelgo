@@ -65,8 +65,6 @@ export default function SKUsPage() {
   const [skuModal, setSkuModal] = useState(false)
   const [editSkuId, setEditSkuId] = useState<string | null>(null)
   const [skuForm, setSkuForm] = useState<any>(emptySkuForm)
-  const [invModal, setInvModal] = useState<SKU | null>(null)
-  const [invForm, setInvForm] = useState<any>({})
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<SKU | null>(null)
   const [lightboxSku, setLightboxSku] = useState<SKU | null>(null)
@@ -124,19 +122,6 @@ export default function SKUsPage() {
     setSkuModal(true)
   }
 
-  function openInvEdit(sku: SKU) {
-    const inv = inventory[sku.id]
-    setInvForm({
-      qty_on_hand: inv?.qty_on_hand?.toString() || "0",
-      qty_reserved: inv?.qty_reserved?.toString() || "0",
-      qty_on_order: inv?.qty_on_order?.toString() || "0",
-      min_stock: inv?.min_stock?.toString() || "5",
-      max_stock: inv?.max_stock?.toString() || "50",
-      reorder_qty: inv?.reorder_qty?.toString() || "20",
-      adjustment_reason: "",
-    })
-    setInvModal(sku)
-  }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -209,37 +194,6 @@ export default function SKUsPage() {
     loadAll()
   }
 
-  async function handleSaveInventory() {
-    if (!invModal) return
-    setSaving(true)
-    const supabase = createClient()
-    const inv = inventory[invModal.id]
-    const payload = {
-      sku_id: invModal.id,
-      qty_on_hand: parseInt(invForm.qty_on_hand) || 0,
-      qty_reserved: parseInt(invForm.qty_reserved) || 0,
-      qty_on_order: parseInt(invForm.qty_on_order) || 0,
-      min_stock: parseInt(invForm.min_stock) || 0,
-      max_stock: parseInt(invForm.max_stock) || 0,
-      reorder_qty: parseInt(invForm.reorder_qty) || 0,
-      updated_at: new Date().toISOString(),
-    }
-    if (inv) {
-      await supabase.from("inventory").update(payload).eq("id", inv.id)
-    } else {
-      await supabase.from("inventory").insert(payload)
-    }
-    if (invForm.adjustment_reason && inv) {
-      const oldQty = inv.qty_on_hand
-      const newQty = parseInt(invForm.qty_on_hand) || 0
-      if (oldQty !== newQty) {
-        await supabase.from("inventory_transactions").insert({ sku_id: invModal.id, transaction_type: "adjustment", quantity_change: newQty - oldQty, quantity_before: oldQty, quantity_after: newQty, notes: invForm.adjustment_reason })
-      }
-    }
-    setSaving(false)
-    setInvModal(null)
-    loadAll()
-  }
 
   async function handleDeleteSku(sku: SKU) {
     const supabase = createClient()
@@ -362,7 +316,7 @@ export default function SKUsPage() {
                     <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: isCritical ? "#A91E22" : isLow ? "#C4A93A" : "#5A9E5A" }}>{qtyOnHand}</span>
-                        <button onClick={() => openInvEdit(sku)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", padding: "2px" }} title="Edit inventory"><Pencil size={11} /></button>
+
                       </div>
                     </td>
                     <td style={{ padding: "10px 12px", fontSize: "11px", color: "#555", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
@@ -520,18 +474,10 @@ export default function SKUsPage() {
                   <label style={labelStyle}>Lead Time (days)</label>
                   <input type="number" style={inputStyle} placeholder="0" value={skuForm.lead_time_days} onChange={e => setSkuForm((f: any) => ({ ...f, lead_time_days: e.target.value }))} />
                 </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "24px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <input type="checkbox" id="is_active" checked={skuForm.is_active} onChange={e => setSkuForm((f: any) => ({ ...f, is_active: e.target.checked }))} style={{ cursor: "pointer" }} />
-                    <label htmlFor="is_active" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Active SKU</label>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <input type="checkbox" id="is_orderable" checked={skuForm.is_orderable ?? true} onChange={e => setSkuForm((f: any) => ({ ...f, is_orderable: e.target.checked }))} style={{ cursor: "pointer" }} />
-                    <label htmlFor="is_orderable" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Visible in dealer portal</label>
-                  </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingTop: "24px" }}>
+                  <input type="checkbox" id="is_active" checked={skuForm.is_active} onChange={e => setSkuForm((f: any) => ({ ...f, is_active: e.target.checked }))} style={{ cursor: "pointer" }} />
+                  <label htmlFor="is_active" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Active SKU</label>
                 </div>
-                
               </div>
 
               <div>
@@ -547,60 +493,6 @@ export default function SKUsPage() {
         </div>
       )}
 
-      {/* Inventory Edit Modal */}
-      {invModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={() => setInvModal(null)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #6A9CC8", width: "100%", maxWidth: "500px" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#161A1D" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                {invModal.image_url && <img src={invModal.image_url} alt={invModal.name} style={{ width: "44px", height: "44px", objectFit: "cover" }} />}
-                <div>
-                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#6A9CC8", margin: "0 0 4px" }}>Adjust Inventory</p>
-                  <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>{invModal.sku_code}</h2>
-                  <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{invModal.name}</p>
-                </div>
-              </div>
-              <button onClick={() => setInvModal(null)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><X size={20} /></button>
-            </div>
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
-                {[
-                  { label: "Qty On Hand", key: "qty_on_hand", highlight: true },
-                  { label: "Qty Reserved", key: "qty_reserved" },
-                  { label: "Qty On Order", key: "qty_on_order" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label style={{ ...labelStyle, color: f.highlight ? "#6A9CC8" : "#666" }}>{f.label}</label>
-                    <input type="number" style={{ ...inputStyle, borderColor: f.highlight ? "rgba(106,156,200,0.3)" : "rgba(255,255,255,0.12)" }} value={invForm[f.key]} onChange={e => setInvForm((iv: any) => ({ ...iv, [f.key]: e.target.value }))} />
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
-                {[
-                  { label: "Min Stock", key: "min_stock" },
-                  { label: "Max Stock", key: "max_stock" },
-                  { label: "Reorder Qty", key: "reorder_qty" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label style={labelStyle}>{f.label}</label>
-                    <input type="number" style={inputStyle} value={invForm[f.key]} onChange={e => setInvForm((iv: any) => ({ ...iv, [f.key]: e.target.value }))} />
-                  </div>
-                ))}
-              </div>
-              <div>
-                <label style={labelStyle}>Adjustment Reason (optional)</label>
-                <input style={inputStyle} placeholder="e.g. Physical count, Received shipment..." value={invForm.adjustment_reason} onChange={e => setInvForm((iv: any) => ({ ...iv, adjustment_reason: e.target.value }))} />
-              </div>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={() => setInvModal(null)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>Cancel</button>
-                <button onClick={handleSaveInventory} disabled={saving} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving ? "#333" : "#6A9CC8", border: "none", padding: "12px", cursor: "pointer" }}>
-                  {saving ? "Saving..." : "Save Inventory →"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete confirm */}
       {deleteConfirm && (
