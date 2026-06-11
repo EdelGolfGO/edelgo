@@ -126,7 +126,7 @@ export default function PortalDashboard() {
           orders.map(order => {
             const statusInfo = STATUS_COLORS[order.status] || STATUS_COLORS.pending
             return (
-              <div key={order.id} onClick={() => router.push(`/portal/orders/${order.id}`)} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.05)", cursor: "pointer" }}
+              <div key={order.id} onClick={() => router.push("/portal/orders")} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.05)", cursor: "pointer" }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}
               >
