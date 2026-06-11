@@ -8,7 +8,7 @@ import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
   Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch, Upload,
-  UserCheck,RefreshCw
+  UserCheck,
 } from "lucide-react"
 
 export default function Sidebar() {
@@ -27,7 +27,8 @@ export default function Sidebar() {
       supabase.from("b2b_orders").select("id", { count: "exact" }).eq("status", "pending"),
     ])
     setPendingCount(pendingResult.count || 0)
-    setNotifCount(notifResult.count || 0)
+    // Bell shows unread notifications + pending orders
+    setNotifCount((notifResult.count || 0) + (pendingOrdersResult.count || 0))
     setPendingOrdersCount(pendingOrdersResult.count || 0)
   }
 
@@ -48,7 +49,7 @@ export default function Sidebar() {
       { label: "Alerts", href: "/operations/alerts", icon: Bell, badge: notifCount },
     ]},
     { section: "Inventory", items: [
-      { label: "Stock Levels", href: "/inventory/stock", icon: Package },
+      { label: "Stock Levels", href: "/inventory", icon: Package },
       { label: "Forecast / Reorder", href: "/inventory/forecast", icon: TrendingDown },
       { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
       { label: "SKUs", href: "/inventory/skus", icon: List },
@@ -56,7 +57,6 @@ export default function Sidebar() {
       { label: "Shopify Import", href: "/inventory/import", icon: Upload },
       { label: "Pricing Tiers", href: "/inventory/pricing", icon: BarChart2 },
       { label: "COGS Calculator", href: "/inventory/cogs", icon: BarChart2 },
-      { label: "Cin7 Import", href: "/inventory/cin7", icon: RefreshCw },
     ]},
     { section: "Accounts", items: [
       { label: "Dealers", href: "/dealers", icon: Building2 },
