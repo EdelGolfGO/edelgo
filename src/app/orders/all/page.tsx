@@ -174,7 +174,20 @@ export default function AllOrdersPage() {
     setSaving(true)
     const supabase = createClient()
 
-    // Update each item
+    // Delete removed items
+    const keepIds = editItems.map(i => i.id)
+    if (keepIds.length > 0) {
+      await supabase.from("b2b_order_items")
+        .delete()
+        .eq("order_id", editModal.id)
+        .not("id", "in", `(${keepIds.join(",")})`)
+    } else {
+      await supabase.from("b2b_order_items")
+        .delete()
+        .eq("order_id", editModal.id)
+    }
+
+    // Update remaining items
     for (const item of editItems) {
       await supabase.from("b2b_order_items")
         .update({ quantity: item.quantity, unit_price: item.unit_price })
