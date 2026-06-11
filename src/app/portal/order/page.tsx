@@ -128,7 +128,7 @@ export default function PortalOrderPage() {
 
     if (error || !order) { setSubmitting(false); return }
 
-    await supabase.from("b2b_order_items").insert(
+    const { error: itemsError } = await supabase.from("b2b_order_items").insert(
       orderItems.map(item => ({
         order_id: order.id,
         sku_id: item.sku.id,
@@ -136,11 +136,10 @@ export default function PortalOrderPage() {
         product_name: item.sku.name,
         quantity: item.quantity,
         unit_price: item.unit_price,
-        total_price: item.unit_price * item.quantity,
         configuration: {},
       }))
     )
-
+    if (itemsError) console.error("Items insert error:", itemsError)
     await supabase.from("portal_notifications").insert({
       type: "order_placed",
       title: `New Order from ${profile?.dealer?.company || profile?.full_name}`,
