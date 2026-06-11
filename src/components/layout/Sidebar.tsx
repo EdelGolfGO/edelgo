@@ -8,7 +8,7 @@ import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
   Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch, Upload,
-  UserCheck,
+  UserCheck,RefreshCw
 } from "lucide-react"
 
 export default function Sidebar() {
@@ -56,6 +56,7 @@ export default function Sidebar() {
       { label: "Shopify Import", href: "/inventory/import", icon: Upload },
       { label: "Pricing Tiers", href: "/inventory/pricing", icon: BarChart2 },
       { label: "COGS Calculator", href: "/inventory/cogs", icon: BarChart2 },
+      { label: "Cin7 Import", href: "/inventory/cin7", icon: RefreshCw },
     ]},
     { section: "Accounts", items: [
       { label: "Dealers", href: "/dealers", icon: Building2 },
