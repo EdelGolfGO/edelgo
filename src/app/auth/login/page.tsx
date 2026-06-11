@@ -26,6 +26,8 @@ export default function LoginPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
   const [loginError, setLoginError] = useState("")
+  const [forgotSent, setForgotSent] = useState(false)
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   // Signup state
   const [signupForm, setSignupForm] = useState({
@@ -104,6 +106,17 @@ export default function LoginPage() {
       return
     }
     setStep(2)
+  }
+
+  async function handleForgotPassword() {
+    if (!loginEmail) return
+    setForgotLoading(true)
+    const supabase = createClient()
+    await supabase.auth.resetPasswordForEmail(loginEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+    setForgotSent(true)
+    setForgotLoading(false)
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -224,6 +237,13 @@ export default function LoginPage() {
                 <button type="submit" disabled={loginLoading} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: loginLoading ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: loginLoading ? "not-allowed" : "pointer", marginTop: "4px" }}>
                   {loginLoading ? "Signing in..." : "Sign In →"}
                 </button>
+                {forgotSent ? (
+                  <p style={{ fontSize: "12px", color: "#5A9E5A", fontFamily: "'Barlow', sans-serif", textAlign: "center", margin: "10px 0 0" }}>✓ Password reset email sent — check your inbox</p>
+                ) : (
+                  <button type="button" onClick={handleForgotPassword} disabled={forgotLoading} style={{ background: "none", border: "none", color: "#555", fontSize: "12px", fontFamily: "'Barlow', sans-serif", cursor: "pointer", textAlign: "center", width: "100%", marginTop: "10px", textDecoration: "underline" }}>
+                    {forgotLoading ? "Sending..." : "Forgot password?"}
+                  </button>
+                )}
                 <p style={{ fontSize: "11px", color: "#333", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
                   Don't have an account? <span onClick={() => setTab("signup")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>Request access</span>
                 </p>
