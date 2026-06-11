@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase"
-import { Save, User } from "lucide-react"
+import { Save, User, AlertTriangle } from "lucide-react"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -15,6 +15,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("")
   const [passwordError, setPasswordError] = useState("")
   const [showPasswords, setShowPasswords] = useState(false)
+  const [passwordChanged, setPasswordChanged] = useState(true)
 
   const [form, setForm] = useState({
     full_name: "",
@@ -35,13 +36,18 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push("/auth/login"); return }
 
-    const { data: profile } = await supabase.from("profiles").select("full_name, phone").eq("id", user.id).single()
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, phone, password_changed")
+      .eq("id", user.id)
+      .single()
 
     setForm({
       full_name: profile?.full_name || "",
       email: user.email || "",
       phone: profile?.phone || "",
     })
+    setPasswordChanged(profile?.password_changed ?? true)
     setLoading(false)
   }
 
@@ -78,6 +84,12 @@ export default function ProfilePage() {
     if (error) {
       setPasswordError(error.message)
     } else {
+      // Mark password as changed
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("profiles").update({ password_changed: true }).eq("id", user.id)
+      }
+      setPasswordChanged(true)
       setPasswordSaved(true)
       setPasswordForm({ new_password: "", confirm_password: "" })
       setTimeout(() => setPasswordSaved(false), 3000)
@@ -102,6 +114,19 @@ export default function ProfilePage() {
         <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>My Profile</h1>
         <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>Update your name, contact details, and password</p>
       </div>
+
+      {/* Temp password warning banner */}
+      {!passwordChanged && (
+        <div style={{ background: "rgba(196,169,58,0.08)", border: "1px solid rgba(196,169,58,0.3)", padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+          <AlertTriangle size={20} color="#C4A93A" style={{ flexShrink: 0, marginTop: "1px" }} />
+          <div>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#C4A93A", margin: "0 0 4px" }}>Temporary Password Active</p>
+            <p style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+              You are using a temporary password. Please update it below before using EdelFit.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Avatar */}
       <div style={{ display: "flex", alignItems: "center", gap: "16px", background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "20px" }}>
@@ -143,11 +168,21 @@ export default function ProfilePage() {
       </div>
 
       {/* Change password */}
-      <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>Change Password</span>
+      <div style={{ background: "#22262B", border: `0.5px solid ${!passwordChanged ? "rgba(196,169,58,0.3)" : "rgba(255,255,255,0.10)"}`, borderTop: !passwordChanged ? "2px solid #C4A93A" : "0.5px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: !passwordChanged ? "#C4A93A" : "#666" }}>
+            {!passwordChanged ? "⚠ Change Your Password" : "Change Password"}
+          </span>
+          {passwordSaved && (
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5A9E5A" }}>✓ Password Updated</span>
+          )}
         </div>
         <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "14px" }}>
+          {!passwordChanged && (
+            <p style={{ fontSize: "12px", color: "#C4A93A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+              Your account is using the temporary password <strong>EdelGolf2026!</strong> — please set a new personal password below.
+            </p>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
             <div>
               <label style={labelStyle}>New Password</label>
@@ -163,7 +198,7 @@ export default function ProfilePage() {
             <label htmlFor="show_pw" style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Show passwords</label>
           </div>
           {passwordError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}>{passwordError}</div>}
-          <button onClick={handleChangePassword} disabled={savingPassword || !passwordForm.new_password} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: passwordSaved ? "#5A9E5A" : savingPassword ? "#333" : "#A91E22", border: "none", padding: "11px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+          <button onClick={handleChangePassword} disabled={savingPassword || !passwordForm.new_password} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: passwordSaved ? "#5A9E5A" : savingPassword ? "#333" : !passwordChanged ? "#C4A93A" : "#A91E22", border: "none", padding: "11px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
             <Save size={14} />{passwordSaved ? "Password Updated!" : savingPassword ? "Updating..." : "Update Password"}
           </button>
         </div>
