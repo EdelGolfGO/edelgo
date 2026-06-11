@@ -48,7 +48,7 @@ export default function Sidebar() {
       { label: "Alerts", href: "/operations/alerts", icon: Bell, badge: notifCount },
     ]},
     { section: "Inventory", items: [
-      { label: "Stock Levels", href: "/inventory", icon: Package },
+      { label: "Stock Levels", href: "/inventory/stock", icon: Package },
       { label: "Forecast / Reorder", href: "/inventory/forecast", icon: TrendingDown },
       { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
       { label: "SKUs", href: "/inventory/skus", icon: List },
