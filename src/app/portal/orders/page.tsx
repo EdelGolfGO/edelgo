@@ -25,7 +25,7 @@ type Order = {
 }
 
 const STATUS_COLORS: Record<string, { color: string; bg: string; label: string }> = {
-  draft:         { color: "#888",    bg: "rgba(136,136,136,0.1)",  label: "Draft" },
+  draft:         { color: "#B5BAC2",    bg: "rgba(136,136,136,0.1)",  label: "Draft" },
   pending:       { color: "#C4A93A", bg: "rgba(196,169,58,0.1)",   label: "Pending Review" },
   approved:      { color: "#6A9CC8", bg: "rgba(106,156,200,0.1)",  label: "Approved" },
   in_production: { color: "#C4A93A", bg: "rgba(196,169,58,0.1)",   label: "In Production" },
@@ -71,7 +71,7 @@ export default function PortalOrdersPage() {
   }
 
   if (loading) return (
-    <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading orders...</div>
+    <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading orders...</div>
   )
 
   return (
@@ -80,13 +80,13 @@ export default function PortalOrdersPage() {
       <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Dealer Portal</p>
         <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>My Orders</h1>
-        <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>{orders.length} order{orders.length !== 1 ? "s" : ""} total</p>
+        <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>{orders.length} order{orders.length !== 1 ? "s" : ""} total</p>
       </div>
 
       {orders.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", margin: 0 }}>No Orders Yet</p>
-          <p style={{ fontSize: "13px", color: "#333", fontFamily: "'Barlow', sans-serif", margin: "8px 0 0" }}>Place your first order using the Place Order tab.</p>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#787E87", margin: 0 }}>No Orders Yet</p>
+          <p style={{ fontSize: "13px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: "8px 0 0" }}>Place your first order using the Place Order tab.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -96,61 +96,61 @@ export default function PortalOrdersPage() {
             const items = order.items || []
 
             return (
-              <div key={order.id} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+              <div key={order.id} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
                 <div onClick={() => setExpanded(isExpanded ? null : order.id)} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}>
                   <div style={{ flex: "0 0 140px" }}>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#A91E22", margin: 0 }}>{order.order_number}</p>
-                    <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{formatDate(order.submitted_at || order.created_at)}</p>
+                    <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{formatDate(order.submitted_at || order.created_at)}</p>
                   </div>
                   <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: statusInfo.color, background: statusInfo.bg, padding: "3px 10px" }}>
                     {statusInfo.label}
                   </span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+                    <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
                       {items.length} item{items.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, color: "#fff", margin: 0 }}>
                     ${(order.total_amount || 0).toLocaleString()}
                   </p>
-                  <ChevronDown size={16} color="#444" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0 }} />
+                  <ChevronDown size={16} color="#787E87" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0 }} />
                 </div>
 
                 {isExpanded && (
-                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#1E2226" }}>
+                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#2B3038" }}>
                     {items.length > 0 ? (
                       <div>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "10px" }}>Order Contents</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "10px" }}>Order Contents</p>
                         <table style={{ width: "100%", borderCollapse: "collapse" }}>
                           <thead>
                             <tr>
                               {["Product", "SKU", "Qty", "Unit Price", "Total"].map(h => (
-                                <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#444", padding: "6px 12px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</th>
+                                <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", padding: "6px 12px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
                             {items.map(item => (
                               <tr key={item.id}>
-                                <td style={{ padding: "8px 12px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.product_name}</td>
-                                <td style={{ padding: "8px 12px", fontSize: "11px", color: "#666", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.04em", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku_code || "—"}</td>
-                                <td style={{ padding: "8px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#CCC", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.quantity}</td>
+                                <td style={{ padding: "8px 12px", fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.product_name}</td>
+                                <td style={{ padding: "8px 12px", fontSize: "11px", color: "#9BA0A8", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.04em", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku_code || "—"}</td>
+                                <td style={{ padding: "8px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#E0E2E6", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.quantity}</td>
                                 <td style={{ padding: "8px 12px", fontSize: "12px", color: "#AAA", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>${(item.unit_price || 0).toFixed(2)}</td>
                                 <td style={{ padding: "8px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#fff", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>${((item.unit_price || 0) * item.quantity).toFixed(2)}</td>
                               </tr>
                             ))}
                             <tr>
-                              <td colSpan={4} style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#555", textAlign: "right" }}>Order Total</td>
+                              <td colSpan={4} style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", textAlign: "right" }}>Order Total</td>
                               <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff" }}>${(order.total_amount || 0).toLocaleString()}</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
                     ) : (
-                      <p style={{ fontSize: "12px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>No line items available.</p>
+                      <p style={{ fontSize: "12px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>No line items available.</p>
                     )}
                     {order.notes && (
-                      <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", marginTop: "12px", fontStyle: "italic" }}>Notes: {order.notes}</p>
+                      <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", marginTop: "12px", fontStyle: "italic" }}>Notes: {order.notes}</p>
                     )}
                   </div>
                 )}

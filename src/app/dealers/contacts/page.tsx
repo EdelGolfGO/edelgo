@@ -82,8 +82,8 @@ export default function ContactsPage() {
     return true
   })
 
-  const inputStyle = { width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
-  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#666", marginBottom: "6px" }
+  const inputStyle = { width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
+  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#9BA0A8", marginBottom: "6px" }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -93,12 +93,12 @@ export default function ContactsPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Accounts</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Contacts</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>Dealer reps, supplier contacts, factory contacts</p>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>Dealer reps, supplier contacts, factory contacts</p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
           <div style={{ position: "relative" }}>
-            <Search size={13} color="#444" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
-            <input placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px 8px 30px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "200px" }} />
+            <Search size={13} color="#787E87" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
+            <input placeholder="Search contacts..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px 8px 30px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "200px" }} />
           </div>
           <button onClick={openNew} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "8px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
             <Plus size={14} /> Add Contact
@@ -109,7 +109,7 @@ export default function ContactsPage() {
       {/* Filter tabs */}
       <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         {(["all", ...ENTITY_TYPES] as const).map(t => (
-          <button key={t} onClick={() => setFilter(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 16px", cursor: "pointer", border: "none", background: "transparent", color: filter === t ? "#fff" : "#555", borderBottom: filter === t ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
+          <button key={t} onClick={() => setFilter(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 16px", cursor: "pointer", border: "none", background: "transparent", color: filter === t ? "#fff" : "#8B919A", borderBottom: filter === t ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
             {t === "all" ? `All (${contacts.length})` : `${t} (${contacts.filter(c => c.entity_type === t).length})`}
           </button>
         ))}
@@ -117,10 +117,10 @@ export default function ContactsPage() {
 
       {/* Contact grid */}
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading contacts...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading contacts...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", margin: "0 0 16px" }}>No Contacts Yet</p>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#787E87", margin: "0 0 16px" }}>No Contacts Yet</p>
           <button onClick={openNew} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "8px 18px", cursor: "pointer" }}>+ Add First Contact</button>
         </div>
       ) : (
@@ -128,7 +128,7 @@ export default function ContactsPage() {
           {filtered.map(contact => {
             const tc = TYPE_COLORS[contact.entity_type] || TYPE_COLORS.dealer
             return (
-              <div key={contact.id} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${tc.color}`, padding: "16px" }}>
+              <div key={contact.id} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${tc.color}`, padding: "16px" }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
@@ -136,35 +136,35 @@ export default function ContactsPage() {
                       {contact.is_primary && <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#C4A93A", background: "rgba(196,169,58,0.1)", padding: "2px 7px" }}>Primary</span>}
                     </div>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "15px", fontWeight: 700, color: "#fff", margin: 0 }}>{contact.name}</p>
-                    {contact.title && <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{contact.title}</p>}
-                    {contact.entity_name && <p style={{ fontSize: "11px", color: "#444", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{contact.entity_name}</p>}
+                    {contact.title && <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{contact.title}</p>}
+                    {contact.entity_name && <p style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{contact.entity_name}</p>}
                   </div>
                   <div style={{ display: "flex", gap: "6px" }}>
-                    <button onClick={() => openEdit(contact)} style={{ background: "none", border: "none", color: "#444", cursor: "pointer", padding: "2px" }}><Pencil size={13} /></button>
-                    <button onClick={() => setDeleteConfirm(contact)} style={{ background: "none", border: "none", color: "#444", cursor: "pointer", padding: "2px" }}><Trash2 size={13} /></button>
+                    <button onClick={() => openEdit(contact)} style={{ background: "none", border: "none", color: "#787E87", cursor: "pointer", padding: "2px" }}><Pencil size={13} /></button>
+                    <button onClick={() => setDeleteConfirm(contact)} style={{ background: "none", border: "none", color: "#787E87", cursor: "pointer", padding: "2px" }}><Trash2 size={13} /></button>
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {contact.email && (
                     <a href={`mailto:${contact.email}`} style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-                      <Mail size={12} color="#555" />
+                      <Mail size={12} color="#8B919A" />
                       <span style={{ fontSize: "12px", color: "#6A9CC8", fontFamily: "'Barlow', sans-serif" }}>{contact.email}</span>
                     </a>
                   )}
                   {contact.phone && (
                     <a href={`tel:${contact.phone}`} style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-                      <Phone size={12} color="#555" />
-                      <span style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif" }}>{contact.phone}</span>
+                      <Phone size={12} color="#8B919A" />
+                      <span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{contact.phone}</span>
                     </a>
                   )}
                   {contact.mobile && contact.mobile !== contact.phone && (
                     <a href={`tel:${contact.mobile}`} style={{ display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
-                      <Phone size={12} color="#444" />
-                      <span style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif" }}>{contact.mobile} (mobile)</span>
+                      <Phone size={12} color="#787E87" />
+                      <span style={{ fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif" }}>{contact.mobile} (mobile)</span>
                     </a>
                   )}
                 </div>
-                {contact.notes && <p style={{ fontSize: "11px", color: "#444", fontFamily: "'Barlow', sans-serif", marginTop: "10px", fontStyle: "italic" }}>{contact.notes}</p>}
+                {contact.notes && <p style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif", marginTop: "10px", fontStyle: "italic" }}>{contact.notes}</p>}
               </div>
             )
           })}
@@ -174,10 +174,10 @@ export default function ContactsPage() {
       {/* Modal */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={() => setModal(false)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#161A1D", position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#20242A", position: "sticky", top: 0, zIndex: 10 }}>
               <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>{editId ? "Edit Contact" : "New Contact"}</h2>
-              <button onClick={() => setModal(false)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><X size={20} /></button>
+              <button onClick={() => setModal(false)} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer" }}><X size={20} /></button>
             </div>
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "14px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -214,13 +214,13 @@ export default function ContactsPage() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <input type="checkbox" id="is_primary" checked={form.is_primary} onChange={e => setForm((f: any) => ({ ...f, is_primary: e.target.checked }))} style={{ cursor: "pointer" }} />
-                <label htmlFor="is_primary" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Primary contact for this account</label>
+                <label htmlFor="is_primary" style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Primary contact for this account</label>
               </div>
               <div>
                 <label style={labelStyle}>Notes</label>
                 <textarea style={{ ...inputStyle, minHeight: "70px", resize: "vertical" }} placeholder="Any notes..." value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} />
               </div>
-              <button onClick={handleSave} disabled={saving || !form.name} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving || !form.name ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: saving || !form.name ? "not-allowed" : "pointer" }}>
+              <button onClick={handleSave} disabled={saving || !form.name} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving || !form.name ? "#666C75" : "#A91E22", border: "none", padding: "13px", cursor: saving || !form.name ? "not-allowed" : "pointer" }}>
                 {saving ? "Saving..." : editId ? "Update Contact →" : "Add Contact →"}
               </button>
             </div>
@@ -231,11 +231,11 @@ export default function ContactsPage() {
       {/* Delete confirm */}
       {deleteConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300 }} onClick={() => setDeleteConfirm(null)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", padding: "32px", width: "360px" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", padding: "32px", width: "360px" }} onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", color: "#fff", margin: "0 0 8px" }}>Delete Contact?</h2>
-            <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px" }}>Delete <strong style={{ color: "#fff" }}>{deleteConfirm.name}</strong>? This cannot be undone.</p>
+            <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px" }}>Delete <strong style={{ color: "#fff" }}>{deleteConfirm.name}</strong>? This cannot be undone.</p>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "10px", cursor: "pointer" }}>Cancel</button>
               <button onClick={() => handleDelete(deleteConfirm)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px", cursor: "pointer" }}>Delete</button>
             </div>
           </div>

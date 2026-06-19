@@ -9,7 +9,7 @@ export default function DealersLayout({ children }: { children: React.ReactNode 
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <Sidebar />
-        <main style={{ flex: 1, background: "#1A1E22", padding: "28px", overflowY: "auto", minHeight: "calc(100vh - 52px)" }}>
+        <main style={{ flex: 1, background: "#262B32", padding: "28px", overflowY: "auto", minHeight: "calc(100vh - 52px)" }}>
           {children}
         </main>
       </div>

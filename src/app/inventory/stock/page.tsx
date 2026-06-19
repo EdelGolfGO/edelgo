@@ -26,7 +26,7 @@ const CATEGORY_COLORS: Record<string, { color: string; bg: string }> = {
   head_only:  { color: "#6A9CC8", bg: "rgba(106,156,200,0.1)" },
   component:  { color: "#C4A93A", bg: "rgba(196,169,58,0.1)" },
   accessory:  { color: "#7AAB6A", bg: "rgba(122,171,106,0.1)" },
-  apparel:    { color: "#888",    bg: "rgba(136,136,136,0.1)" },
+  apparel:    { color: "#B5BAC2",    bg: "rgba(136,136,136,0.1)" },
 }
 
 export default function StockLevelsPage() {
@@ -122,8 +122,8 @@ export default function StockLevelsPage() {
   const outOfStock = records.filter(r => r.qty_on_hand <= 0).length
   const healthy = records.filter(r => r.qty_on_hand > r.min_stock).length
 
-  const inputStyle = { width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
-  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#666", marginBottom: "6px" }
+  const inputStyle = { width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
+  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#9BA0A8", marginBottom: "6px" }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -133,14 +133,14 @@ export default function StockLevelsPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Inventory</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Stock Levels</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>{totalSkus} SKUs tracked</p>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>{totalSkus} SKUs tracked</p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
           <div style={{ position: "relative" }}>
-            <Search size={13} color="#444" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
-            <input placeholder="Search SKUs..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px 8px 30px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "220px" }} />
+            <Search size={13} color="#787E87" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
+            <input placeholder="Search SKUs..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px 8px 30px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "220px" }} />
           </div>
-          <button onClick={() => window.location.href = "/inventory/forecast"} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+          <button onClick={() => window.location.href = "/inventory/forecast"} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
             <TrendingDown size={13} /> Reorder Forecast
           </button>
         </div>
@@ -149,13 +149,13 @@ export default function StockLevelsPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
         {[
-          { label: "Total SKUs", value: totalSkus, color: "#fff", top: "#2A2A2A", filter: "all" },
+          { label: "Total SKUs", value: totalSkus, color: "#fff", top: "#3A3F47", filter: "all" },
           { label: "Healthy Stock", value: healthy, color: "#5A9E5A", top: "#5A9E5A", filter: "healthy" },
-          { label: "Low Stock", value: lowStock, color: "#C4A93A", top: lowStock > 0 ? "#C4A93A" : "#2A2A2A", filter: "low" },
-          { label: "Out of Stock", value: outOfStock, color: "#A91E22", top: outOfStock > 0 ? "#A91E22" : "#2A2A2A", filter: "critical" },
+          { label: "Low Stock", value: lowStock, color: "#C4A93A", top: lowStock > 0 ? "#C4A93A" : "#3A3F47", filter: "low" },
+          { label: "Out of Stock", value: outOfStock, color: "#A91E22", top: outOfStock > 0 ? "#A91E22" : "#3A3F47", filter: "critical" },
         ].map(s => (
-          <div key={s.label} onClick={() => setStatusFilter(statusFilter === s.filter ? "all" : s.filter)} style={{ background: "#22262B", border: `0.5px solid ${statusFilter === s.filter ? s.top : "rgba(255,255,255,0.10)"}`, borderTop: `2px solid ${s.top}`, padding: "18px 20px", cursor: "pointer" }}>
-            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888", marginBottom: "8px" }}>{s.label}</p>
+          <div key={s.label} onClick={() => setStatusFilter(statusFilter === s.filter ? "all" : s.filter)} style={{ background: "#2E343C", border: `0.5px solid ${statusFilter === s.filter ? s.top : "rgba(255,255,255,0.10)"}`, borderTop: `2px solid ${s.top}`, padding: "18px 20px", cursor: "pointer" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>{s.label}</p>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "28px", fontWeight: 700, color: s.color, lineHeight: 1, margin: 0 }}>{s.value}</p>
           </div>
         ))}
@@ -163,25 +163,25 @@ export default function StockLevelsPage() {
 
       {/* Filters */}
       <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 12px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }}>
+        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 12px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }}>
           <option value="all">All Categories</option>
           {categories.map(c => <option key={c} value={c}>{c.replace("_", " ")}</option>)}
         </select>
-        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#444" }}>{filtered.length} SKUs shown</span>
+        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#787E87" }}>{filtered.length} SKUs shown</span>
       </div>
 
       {/* Stock table */}
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", textTransform: "uppercase" }}>No SKUs match this filter</div>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", textTransform: "uppercase" }}>No SKUs match this filter</div>
       ) : (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#1A1E22" }}>
+              <tr style={{ background: "#262B32" }}>
                 {["", "SKU", "Name", "Category", "On Hand", "Reserved", "On Order", "Min", "Max", "Status", ""].map((h, i) => (
-                  <th key={i} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#555", padding: "10px 12px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>{h}</th>
+                  <th key={i} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", padding: "10px 12px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -206,11 +206,11 @@ export default function StockLevelsPage() {
                       {record.sku?.image_url ? (
                         <img src={record.sku.image_url} alt="" style={{ width: "36px", height: "36px", objectFit: "cover", display: "block" }} />
                       ) : (
-                        <div style={{ width: "36px", height: "36px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)" }} />
+                        <div style={{ width: "36px", height: "36px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.06)" }} />
                       )}
                     </td>
                     <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)", whiteSpace: "nowrap" }}>{record.sku?.sku_code}</td>
-                    <td style={{ padding: "10px 12px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{record.sku?.name}</td>
+                    <td style={{ padding: "10px 12px", fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{record.sku?.name}</td>
                     <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: cc.color, background: cc.bg, padding: "2px 7px" }}>
                         {cat.replace("_", " ")}
@@ -219,15 +219,15 @@ export default function StockLevelsPage() {
                     <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, color: statusColor }}>{qty}</span>
                     </td>
-                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#555", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.qty_reserved ?? 0}</td>
+                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#8B919A", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.qty_reserved ?? 0}</td>
                     <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#6A9CC8", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.qty_on_order ?? 0}</td>
-                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", color: "#444", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.min_stock}</td>
-                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", color: "#444", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.max_stock}</td>
+                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", color: "#787E87", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.min_stock}</td>
+                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", color: "#787E87", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.max_stock}</td>
                     <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: statusColor, background: statusBg, padding: "2px 8px" }}>{statusLabel}</span>
                     </td>
                     <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
-                      <button onClick={() => openEdit(record)} style={{ background: "none", border: "none", color: "#444", cursor: "pointer", padding: "2px" }} title="Edit stock levels">
+                      <button onClick={() => openEdit(record)} style={{ background: "none", border: "none", color: "#787E87", cursor: "pointer", padding: "2px" }} title="Edit stock levels">
                         <Pencil size={13} />
                       </button>
                     </td>
@@ -242,17 +242,17 @@ export default function StockLevelsPage() {
       {/* Edit Modal */}
       {editModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={() => setEditModal(null)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #6A9CC8", width: "100%", maxWidth: "520px" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#161A1D" }}>
+          <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #6A9CC8", width: "100%", maxWidth: "520px" }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#20242A" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                 {editModal.sku?.image_url && <img src={editModal.sku.image_url} alt="" style={{ width: "44px", height: "44px", objectFit: "cover", flexShrink: 0 }} />}
                 <div>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#6A9CC8", margin: "0 0 3px" }}>Adjust Stock</p>
                   <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, textTransform: "uppercase", color: "#fff", margin: 0 }}>{editModal.sku?.sku_code}</h2>
-                  <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{editModal.sku?.name}</p>
+                  <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{editModal.sku?.name}</p>
                 </div>
               </div>
-              <button onClick={() => setEditModal(null)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><X size={20} /></button>
+              <button onClick={() => setEditModal(null)} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer" }}><X size={20} /></button>
             </div>
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
@@ -262,7 +262,7 @@ export default function StockLevelsPage() {
                   { label: "Qty On Order", key: "qty_on_order" },
                 ].map(f => (
                   <div key={f.key}>
-                    <label style={{ ...labelStyle, color: f.highlight ? "#6A9CC8" : "#666" }}>{f.label}</label>
+                    <label style={{ ...labelStyle, color: f.highlight ? "#6A9CC8" : "#9BA0A8" }}>{f.label}</label>
                     <input type="number" style={{ ...inputStyle, borderColor: f.highlight ? "rgba(106,156,200,0.3)" : "rgba(255,255,255,0.12)" }} value={editForm[f.key]} onChange={e => setEditForm((v: any) => ({ ...v, [f.key]: e.target.value }))} />
                   </div>
                 ))}
@@ -284,8 +284,8 @@ export default function StockLevelsPage() {
                 <input style={inputStyle} placeholder="e.g. Physical count, Received shipment, Damage..." value={editForm.adjustment_reason} onChange={e => setEditForm((v: any) => ({ ...v, adjustment_reason: e.target.value }))} />
               </div>
               <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={() => setEditModal(null)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving ? "#333" : "#6A9CC8", border: "none", padding: "12px", cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <button onClick={() => setEditModal(null)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9BA0A8", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving ? "#666C75" : "#6A9CC8", border: "none", padding: "12px", cursor: saving ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                   <Save size={14} /> {saving ? "Saving..." : "Save Stock Levels →"}
                 </button>
               </div>

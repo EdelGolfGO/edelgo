@@ -15,7 +15,7 @@ export default function DashboardLayout({
         <Sidebar />
         <main style={{
           flex: 1,
-          background: "#0E1012",
+          background: "#262B32",
           padding: "28px",
           overflowY: "auto",
           minHeight: "calc(100vh - 52px)",

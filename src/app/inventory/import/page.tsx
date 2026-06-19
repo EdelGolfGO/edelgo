@@ -278,7 +278,7 @@ export default function ShopifyImportPage() {
       <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Inventory</p>
         <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Shopify SKU Import</h1>
-        <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
+        <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
           Upload your Shopify products CSV to import all SKUs into EdelFit
         </p>
       </div>
@@ -295,10 +295,10 @@ export default function ShopifyImportPage() {
           return (
             <div key={s.key} style={{ display: "flex", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", background: isActive ? "rgba(169,30,34,0.1)" : isDone ? "rgba(90,158,90,0.08)" : "transparent", border: `0.5px solid ${isActive ? "rgba(169,30,34,0.3)" : isDone ? "rgba(90,158,90,0.2)" : "rgba(255,255,255,0.06)"}` }}>
-                <div style={{ width: "20px", height: "20px", background: isActive ? "#A91E22" : isDone ? "#5A9E5A" : "#333", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: "20px", height: "20px", background: isActive ? "#A91E22" : isDone ? "#5A9E5A" : "#666C75", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isDone ? <span style={{ color: "#fff", fontSize: "11px" }}>✓</span> : <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#fff" }}>{i + 1}</span>}
                 </div>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isActive ? "#fff" : isDone ? "#5A9E5A" : "#444" }}>{s.label}</span>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isActive ? "#fff" : isDone ? "#5A9E5A" : "#787E87" }}>{s.label}</span>
               </div>
               {i < 2 && <div style={{ width: "24px", height: "0.5px", background: "rgba(255,255,255,0.08)" }} />}
             </div>
@@ -312,13 +312,13 @@ export default function ShopifyImportPage() {
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          style={{ border: `1px dashed ${dragOver ? "#A91E22" : "rgba(255,255,255,0.15)"}`, background: dragOver ? "rgba(169,30,34,0.05)" : "#13161A", padding: "60px 20px", textAlign: "center", transition: "all 0.2s" }}
+          style={{ border: `1px dashed ${dragOver ? "#A91E22" : "rgba(255,255,255,0.15)"}`, background: dragOver ? "rgba(169,30,34,0.05)" : "#23282E", padding: "60px 20px", textAlign: "center", transition: "all 0.2s" }}
         >
-          <Upload size={36} color={dragOver ? "#A91E22" : "#333"} style={{ margin: "0 auto 16px" }} />
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#666", margin: "0 0 8px" }}>
+          <Upload size={36} color={dragOver ? "#A91E22" : "#666C75"} style={{ margin: "0 auto 16px" }} />
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9BA0A8", margin: "0 0 8px" }}>
             Drop your Shopify CSV here
           </p>
-          <p style={{ fontSize: "13px", color: "#444", fontFamily: "'Barlow', sans-serif", margin: "0 0 20px" }}>
+          <p style={{ fontSize: "13px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "0 0 20px" }}>
             Export from Shopify Admin → Products → Export → All products → CSV
           </p>
           <label style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", padding: "10px 24px", cursor: "pointer" }}>
@@ -339,8 +339,8 @@ export default function ShopifyImportPage() {
               { label: "Total SKUs", value: parsed.length.toString(), color: "#6A9CC8" },
               { label: "Active SKUs", value: parsed.filter(p => p.status === "active").length.toString(), color: "#5A9E5A" },
             ].map(s => (
-              <div key={s.label} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #2A2A2A", padding: "18px 20px" }}>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888", marginBottom: "8px" }}>{s.label}</p>
+              <div key={s.label} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #3A3F47", padding: "18px 20px" }}>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>{s.label}</p>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "28px", fontWeight: 700, color: s.color, lineHeight: 1, margin: 0 }}>{s.value}</p>
               </div>
             ))}
@@ -356,17 +356,17 @@ export default function ShopifyImportPage() {
           </div>
 
           {/* Product preview table */}
-          <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#666" }}>Preview — First 20 Products</span>
-              <span style={{ fontSize: "11px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>{uniqueProducts} total products</span>
+          <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+            <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#9BA0A8" }}>Preview — First 20 Products</span>
+              <span style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>{uniqueProducts} total products</span>
             </div>
             <div style={{ maxHeight: "400px", overflowY: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: "#1A1E22", position: "sticky", top: 0 }}>
+                  <tr style={{ background: "#262B32", position: "sticky", top: 0 }}>
                     {["Product", "Type", "SKUs", "Price Range", "Status"].map(h => (
-                      <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#555", padding: "8px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>{h}</th>
+                      <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", padding: "8px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -378,12 +378,12 @@ export default function ShopifyImportPage() {
                     const category = mapCategory(product.type)
                     return (
                       <tr key={handle}>
-                        <td style={{ padding: "8px 14px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{product.title}</td>
+                        <td style={{ padding: "8px 14px", fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{product.title}</td>
                         <td style={{ padding: "8px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                           <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "2px 6px" }}>{category.replace("_", " ")}</span>
                         </td>
                         <td style={{ padding: "8px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#AAA", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{product.skus.length}</td>
-                        <td style={{ padding: "8px 14px", fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                        <td style={{ padding: "8px 14px", fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                           {prices.length > 0 ? (minPrice === maxPrice ? `$${minPrice.toFixed(2)}` : `$${minPrice.toFixed(2)} – $${maxPrice.toFixed(2)}`) : "—"}
                         </td>
                         <td style={{ padding: "8px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
@@ -400,8 +400,8 @@ export default function ShopifyImportPage() {
           </div>
 
           <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => { setStep("upload"); setFile(null); setParsed([]) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>← Upload Different File</button>
-            <button onClick={handleImport} disabled={importing} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: importing ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: importing ? "not-allowed" : "pointer" }}>
+            <button onClick={() => { setStep("upload"); setFile(null); setParsed([]) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9BA0A8", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer" }}>← Upload Different File</button>
+            <button onClick={handleImport} disabled={importing} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: importing ? "#666C75" : "#A91E22", border: "none", padding: "13px", cursor: importing ? "not-allowed" : "pointer" }}>
               {importing ? "Importing... this may take a moment" : `Import ${parsed.length} SKUs into EdelFit →`}
             </button>
           </div>
@@ -422,10 +422,10 @@ export default function ShopifyImportPage() {
               {[
                 { label: "Total Processed", value: result.total.toString(), color: "#fff" },
                 { label: "New SKUs Added", value: result.imported.toString(), color: "#5A9E5A" },
-                { label: "Updated / Skipped", value: result.skipped.toString(), color: "#888" },
+                { label: "Updated / Skipped", value: result.skipped.toString(), color: "#B5BAC2" },
               ].map(s => (
                 <div key={s.label}>
-                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#555", margin: "0 0 4px" }}>{s.label}</p>
+                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", margin: "0 0 4px" }}>{s.label}</p>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "28px", fontWeight: 700, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
                 </div>
               ))}
@@ -436,7 +436,7 @@ export default function ShopifyImportPage() {
             <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.2)", padding: "16px" }}>
               <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#A91E22", marginBottom: "8px" }}>Errors ({result.errors.length})</p>
               {result.errors.slice(0, 10).map((e, i) => (
-                <p key={i} style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px" }}>• {e}</p>
+                <p key={i} style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px" }}>• {e}</p>
               ))}
             </div>
           )}
@@ -445,10 +445,10 @@ export default function ShopifyImportPage() {
             <a href="/inventory/skus" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px 20px", cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
               View SKUs →
             </a>
-            <a href="/inventory" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
+            <a href="/inventory" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
               View Inventory →
             </a>
-            <button onClick={() => { setStep("upload"); setFile(null); setParsed([]); setResult(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#555", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>
+            <button onClick={() => { setStep("upload"); setFile(null); setParsed([]); setResult(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer" }}>
               Import Another File
             </button>
           </div>

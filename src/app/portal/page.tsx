@@ -36,7 +36,7 @@ export default function PortalDashboard() {
   }
 
   const STATUS_COLORS: Record<string, { color: string; bg: string; label: string }> = {
-    draft:         { color: "#888",    bg: "rgba(136,136,136,0.1)",  label: "Draft" },
+    draft:         { color: "#B5BAC2",    bg: "rgba(136,136,136,0.1)",  label: "Draft" },
     pending:       { color: "#C4A93A", bg: "rgba(196,169,58,0.1)",  label: "Pending Review" },
     approved:      { color: "#6A9CC8", bg: "rgba(106,156,200,0.1)", label: "Approved" },
     in_production: { color: "#C4A93A", bg: "rgba(196,169,58,0.1)",  label: "In Production" },
@@ -60,7 +60,7 @@ export default function PortalDashboard() {
       <div style={{ paddingBottom: "20px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "6px" }}>Dealer Portal</p>
         <h1 style={{ fontSize: "36px", color: "#fff", margin: "0 0 6px" }}>{greeting}, {dealerName}</h1>
-        <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+        <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
           {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
           {profile?.dealer?.payment_terms && ` · Payment terms: ${profile.dealer.payment_terms.replace("_", "/").toUpperCase()}`}
         </p>
@@ -79,27 +79,27 @@ export default function PortalDashboard() {
           </div>
         </div>
 
-        <div onClick={() => router.push("/portal/orders")} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "24px", cursor: "pointer", display: "flex", flexDirection: "column", gap: "10px" }}
+        <div onClick={() => router.push("/portal/orders")} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "24px", cursor: "pointer", display: "flex", flexDirection: "column", gap: "10px" }}
           onMouseEnter={e => e.currentTarget.style.background = "#262B30"}
-          onMouseLeave={e => e.currentTarget.style.background = "#22262B"}
+          onMouseLeave={e => e.currentTarget.style.background = "#2E343C"}
         >
           <Clock size={24} color="#6A9CC8" />
           <div>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", margin: "0 0 4px" }}>My Orders</p>
-            <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+            <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
               {openOrders.length > 0 ? `${openOrders.length} active order${openOrders.length !== 1 ? "s" : ""}` : "View order history"}
             </p>
           </div>
         </div>
 
-        <div onClick={() => router.push("/portal/invoices")} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "24px", cursor: "pointer", display: "flex", flexDirection: "column", gap: "10px" }}
+        <div onClick={() => router.push("/portal/invoices")} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "24px", cursor: "pointer", display: "flex", flexDirection: "column", gap: "10px" }}
           onMouseEnter={e => e.currentTarget.style.background = "#262B30"}
-          onMouseLeave={e => e.currentTarget.style.background = "#22262B"}
+          onMouseLeave={e => e.currentTarget.style.background = "#2E343C"}
         >
           <FileText size={24} color="#5A9E5A" />
           <div>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", margin: "0 0 4px" }}>Invoices</p>
-            <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+            <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
               {pendingInvoices.length > 0 ? `${pendingInvoices.length} pending payment` : "All paid up"}
             </p>
           </div>
@@ -107,17 +107,17 @@ export default function PortalDashboard() {
       </div>
 
       {/* Recent orders */}
-      <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>Recent Orders</span>
+      <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9BA0A8" }}>Recent Orders</span>
           <button onClick={() => router.push("/portal/orders")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "none", cursor: "pointer" }}>View All →</button>
         </div>
 
         {loading ? (
-          <div style={{ padding: "40px", textAlign: "center", color: "#333", fontSize: "13px", fontFamily: "'Barlow', sans-serif" }}>Loading...</div>
+          <div style={{ padding: "40px", textAlign: "center", color: "#666C75", fontSize: "13px", fontFamily: "'Barlow', sans-serif" }}>Loading...</div>
         ) : orders.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center" }}>
-            <p style={{ fontSize: "13px", color: "#444", fontFamily: "'Barlow', sans-serif", margin: "0 0 16px" }}>No orders yet. Ready to place your first order?</p>
+            <p style={{ fontSize: "13px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "0 0 16px" }}>No orders yet. Ready to place your first order?</p>
             <button onClick={() => router.push("/portal/order")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "8px 20px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <Plus size={14} /> Place First Order
             </button>
@@ -132,7 +132,7 @@ export default function PortalDashboard() {
               >
                 <div style={{ flex: 1 }}>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#A91E22", margin: 0, letterSpacing: "0.05em" }}>{order.order_number || `Order #${order.id.slice(0, 8)}`}</p>
-                  <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{formatDate(order.created_at)}</p>
+                  <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{formatDate(order.created_at)}</p>
                 </div>
                 <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: statusInfo.color, background: statusInfo.bg, padding: "3px 10px" }}>{statusInfo.label}</span>
                 <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff" }}>${(order.total_amount || 0).toLocaleString()}</span>
@@ -144,8 +144,8 @@ export default function PortalDashboard() {
 
       {/* Account info */}
       {profile?.dealer && (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "20px" }}>
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "14px" }}>Account Details</p>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "20px" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "14px" }}>Account Details</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
             {[
               { label: "Account Type", value: profile.dealer.dealer_type?.charAt(0).toUpperCase() + profile.dealer.dealer_type?.slice(1) },
@@ -154,8 +154,8 @@ export default function PortalDashboard() {
               { label: "Discount", value: profile.dealer.discount_percent ? `${profile.dealer.discount_percent}%` : "None" },
             ].map(item => (
               <div key={item.label}>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#444", margin: "0 0 4px" }}>{item.label}</p>
-                <p style={{ fontSize: "13px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{item.value || "—"}</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>{item.label}</p>
+                <p style={{ fontSize: "13px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{item.value || "—"}</p>
               </div>
             ))}
           </div>

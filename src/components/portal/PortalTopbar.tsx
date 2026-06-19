@@ -60,7 +60,7 @@ export default function PortalTopbar() {
                     fontFamily: "'Barlow Condensed', sans-serif",
                     fontSize: "12px", fontWeight: 700,
                     letterSpacing: "0.1em", textTransform: "uppercase",
-                    color: active ? "#fff" : "#555",
+                    color: active ? "#fff" : "#8B919A",
                     background: active ? "rgba(169,30,34,0.1)" : "transparent",
                     border: "none",
                     borderBottom: active ? "2px solid #A91E22" : "2px solid transparent",
@@ -84,17 +84,17 @@ export default function PortalTopbar() {
             style={{
               display: "flex", alignItems: "center", gap: "8px",
               cursor: "pointer", padding: "6px 12px",
-              border: dropdownOpen ? "1.5px solid #A91E22" : "1.5px solid #333",
+              border: dropdownOpen ? "1.5px solid #A91E22" : "1.5px solid #666C75",
               background: dropdownOpen ? "rgba(169,30,34,0.08)" : "#1A1A1A",
             }}
           >
             <div style={{ width: "24px", height: "24px", background: "#A91E22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: 700, color: "#fff", fontFamily: "'Barlow Condensed', sans-serif" }}>EF</div>
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#888" }}>My Account</span>
-            <ChevronDown size={12} color="#555" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s" }} />
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#B5BAC2" }}>My Account</span>
+            <ChevronDown size={12} color="#8B919A" style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s" }} />
           </div>
 
           {dropdownOpen && (
-            <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#161A1D", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22", minWidth: "180px", zIndex: 100 }}>
+            <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "#20242A", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22", minWidth: "180px", zIndex: 100 }}>
               <div
                 onClick={() => { setDropdownOpen(false); setSignOutModal(true) }}
                 style={{ display: "flex", alignItems: "center", gap: "10px", padding: "12px 16px", cursor: "pointer", fontSize: "13px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}
@@ -111,11 +111,11 @@ export default function PortalTopbar() {
 
       {signOutModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }} onClick={() => setSignOutModal(false)}>
-          <div style={{ background: "#161A1D", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22", padding: "32px", width: "360px" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#20242A", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22", padding: "32px", width: "360px" }} onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: "0 0 8px" }}>Sign Out?</h2>
-            <p style={{ fontSize: "13px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px" }}>You will be returned to the login screen.</p>
+            <p style={{ fontSize: "13px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px" }}>You will be returned to the login screen.</p>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => setSignOutModal(false)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "10px", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setSignOutModal(false)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9BA0A8", background: "transparent", border: "1px solid #666C75", padding: "10px", cursor: "pointer" }}>Cancel</button>
               <button onClick={handleSignOut} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px", cursor: "pointer" }}>Sign Out</button>
             </div>
           </div>

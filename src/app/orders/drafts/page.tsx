@@ -60,7 +60,7 @@ export default function DraftsPage() {
             style={{
               fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px",
               fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase",
-              color: "#888", background: "transparent", border: "none",
+              color: "#B5BAC2", background: "transparent", border: "none",
               cursor: "pointer", padding: 0, marginBottom: "8px",
               display: "flex", alignItems: "center", gap: "6px",
             }}>
@@ -73,7 +73,7 @@ export default function DraftsPage() {
           }}>Orders</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Order Drafts</h1>
           <p style={{
-            fontSize: "12px", color: "#888", marginTop: "5px",
+            fontSize: "12px", color: "#B5BAC2", marginTop: "5px",
             fontFamily: "'Barlow', sans-serif", textTransform: "none",
             letterSpacing: "normal", fontWeight: 400,
           }}>Saved drafts — resume or discard at any time</p>
@@ -90,16 +90,16 @@ export default function DraftsPage() {
       {/* Drafts list */}
       {drafts.length === 0 ? (
         <div style={{
-          background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)",
+          background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)",
           padding: "60px 20px", textAlign: "center",
         }}>
           <p style={{
             fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px",
             fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em",
-            color: "#444", margin: "0 0 8px",
+            color: "#787E87", margin: "0 0 8px",
           }}>No Drafts Saved</p>
           <p style={{
-            fontSize: "13px", color: "#333",
+            fontSize: "13px", color: "#666C75",
             fontFamily: "'Barlow', sans-serif", margin: "0 0 20px",
           }}>Start a new order and save it as a draft to see it here.</p>
           <button
@@ -114,7 +114,7 @@ export default function DraftsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {drafts.map(draft => (
             <div key={draft.id} style={{
-              background: "#22262B",
+              background: "#2E343C",
               border: "0.5px solid rgba(255,255,255,0.10)",
               padding: "20px 24px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -136,18 +136,18 @@ export default function DraftsPage() {
                   }}>Draft</span>
                 </div>
                 <div style={{ display: "flex", gap: "24px" }}>
-                  <span style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif" }}>
+                  <span style={{ fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif" }}>
                     Saved {formatDate(draft.savedAt)}
                   </span>
-                  <span style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif" }}>
+                  <span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>
                     Est. total: ${getDraftTotal(draft.items).toFixed(2)}
                   </span>
                 </div>
                 <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   {draft.items.slice(0, 4).map(item => (
                     <span key={item.id} style={{
-                      fontSize: "11px", color: "#666",
-                      background: "#1A1E22",
+                      fontSize: "11px", color: "#9BA0A8",
+                      background: "#262B32",
                       border: "0.5px solid rgba(255,255,255,0.08)",
                       padding: "3px 8px",
                       fontFamily: "'Barlow', sans-serif",
@@ -155,7 +155,7 @@ export default function DraftsPage() {
                   ))}
                   {draft.items.length > 4 && (
                     <span style={{
-                      fontSize: "11px", color: "#444",
+                      fontSize: "11px", color: "#787E87",
                       fontFamily: "'Barlow', sans-serif",
                       padding: "3px 0",
                     }}>+{draft.items.length - 4} more</span>
@@ -168,8 +168,8 @@ export default function DraftsPage() {
                   style={{
                     fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px",
                     fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-                    color: "#555", background: "transparent",
-                    border: "1px solid #333", padding: "7px 14px", cursor: "pointer",
+                    color: "#8B919A", background: "transparent",
+                    border: "1px solid #666C75", padding: "7px 14px", cursor: "pointer",
                   }}>Discard</button>
                 <button
                   onClick={() => router.push("/orders/new")}
@@ -197,7 +197,7 @@ export default function DraftsPage() {
         >
           <div
             style={{
-              background: "#1E2226",
+              background: "#2B3038",
               border: "0.5px solid rgba(255,255,255,0.10)",
               borderTop: "2px solid #A91E22",
               padding: "32px", width: "360px",
@@ -211,7 +211,7 @@ export default function DraftsPage() {
               color: "#fff", margin: "0 0 8px",
             }}>Discard Draft?</h2>
             <p style={{
-              fontSize: "13px", color: "#888",
+              fontSize: "13px", color: "#B5BAC2",
               fontFamily: "'Barlow', sans-serif",
               margin: "0 0 24px", fontWeight: 400,
               textTransform: "none", letterSpacing: "normal",
@@ -224,8 +224,8 @@ export default function DraftsPage() {
                 style={{
                   flex: 1, fontFamily: "'Barlow Condensed', sans-serif",
                   fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em",
-                  textTransform: "uppercase", color: "#888", background: "transparent",
-                  border: "1px solid #333", padding: "10px", cursor: "pointer",
+                  textTransform: "uppercase", color: "#B5BAC2", background: "transparent",
+                  border: "1px solid #666C75", padding: "10px", cursor: "pointer",
                 }}>Cancel</button>
               <button
                 onClick={() => deleteDraft(deleteModal)}

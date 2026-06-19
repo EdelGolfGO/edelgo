@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase"
 import {
   LayoutDashboard, ClipboardList, Plus, Clock,
-  Boxes, List, Package, Building2, Users, BarChart2, Settings, FileText,
+  List, Package, Building2, Users, BarChart2, Settings, FileText,
   Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch, Upload,
   UserCheck,
 } from "lucide-react"
@@ -27,7 +27,6 @@ export default function Sidebar() {
       supabase.from("b2b_orders").select("id", { count: "exact" }).eq("status", "pending"),
     ])
     setPendingCount(pendingResult.count || 0)
-    // Bell shows unread notifications + pending orders
     setNotifCount((notifResult.count || 0) + (pendingOrdersResult.count || 0))
     setPendingOrdersCount(pendingOrdersResult.count || 0)
   }
@@ -53,7 +52,6 @@ export default function Sidebar() {
       { label: "Forecast / Reorder", href: "/inventory/forecast", icon: TrendingDown },
       { label: "Bill of Materials", href: "/inventory/boms", icon: GitBranch },
       { label: "SKUs", href: "/inventory/skus", icon: List },
-      { label: "Products", href: "/inventory/products", icon: Boxes },
       { label: "Shopify Import", href: "/inventory/import", icon: Upload },
       { label: "Pricing Tiers", href: "/inventory/pricing", icon: BarChart2 },
       { label: "COGS Calculator", href: "/inventory/cogs", icon: BarChart2 },
@@ -72,7 +70,7 @@ export default function Sidebar() {
 
   return (
     <aside style={{
-      background: "#161A1D",
+      background: "#20242A",
       borderRight: "0.5px solid rgba(255,255,255,0.06)",
       width: "210px",
       minHeight: "100%",
@@ -86,7 +84,7 @@ export default function Sidebar() {
             padding: "14px 16px 5px",
             fontSize: "9px", fontWeight: 700,
             letterSpacing: "0.2em", textTransform: "uppercase",
-            color: "#2A2A2A",
+            color: "#3A3F47",
             fontFamily: "'Barlow Condensed', sans-serif",
             margin: 0,
           }}>{group.section}</p>
@@ -99,7 +97,7 @@ export default function Sidebar() {
                 padding: "8px 14px", margin: "0 6px",
                 fontSize: "13px",
                 fontWeight: active ? 500 : 400,
-                color: active ? "#fff" : "#555",
+                color: active ? "#fff" : "#8B919A",
                 background: active ? "rgba(169,30,34,0.08)" : "transparent",
                 borderLeft: active ? "2px solid #A91E22" : "2px solid transparent",
                 textDecoration: "none",

@@ -88,7 +88,7 @@ export default function CogsPage() {
     a.click()
   }
 
-  const inputStyle = { background: "#13161A", border: "0.5px solid rgba(255,255,255,0.08)", color: "#fff", padding: "5px 8px", fontSize: "12px", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, outline: "none", width: "90px", textAlign: "right" as const }
+  const inputStyle = { background: "#23282E", border: "0.5px solid rgba(255,255,255,0.08)", color: "#fff", padding: "5px 8px", fontSize: "12px", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, outline: "none", width: "90px", textAlign: "right" as const }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -97,15 +97,15 @@ export default function CogsPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Finance</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>COGS Calculator</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>
             Calculate cost of goods sold for financial reporting
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <div>
-            <input style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "140px" }} value={quarter} onChange={e => setQuarter(e.target.value)} placeholder="Q1 2026" />
+            <input style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "140px" }} value={quarter} onChange={e => setQuarter(e.target.value)} placeholder="Q1 2026" />
           </div>
-          <button onClick={exportCSV} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+          <button onClick={exportCSV} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
             <Download size={13} /> Export CSV
           </button>
         </div>
@@ -119,8 +119,8 @@ export default function CogsPage() {
           { label: "Gross Profit", value: `$${Math.round(getTotalGrossProfit()).toLocaleString()}`, color: getTotalGrossProfit() > 0 ? "#5A9E5A" : "#A91E22" },
           { label: "Gross Margin", value: getTotalRevenue() > 0 ? `${(getTotalGrossProfit() / getTotalRevenue() * 100).toFixed(1)}%` : "—", color: "#6A9CC8" },
         ].map(s => (
-          <div key={s.label} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #2A2A2A", padding: "18px 20px" }}>
-            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888", marginBottom: "8px" }}>{s.label}</p>
+          <div key={s.label} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #3A3F47", padding: "18px 20px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>{s.label}</p>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: s.color, lineHeight: 1, margin: 0 }}>{s.value}</p>
           </div>
         ))}
@@ -128,14 +128,14 @@ export default function CogsPage() {
 
       {/* Table */}
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", textTransform: "uppercase" }}>Loading...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", textTransform: "uppercase" }}>Loading...</div>
       ) : (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", overflowX: "auto" }}>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1100px" }}>
             <thead>
-              <tr style={{ background: "#1A1E22" }}>
+              <tr style={{ background: "#262B32" }}>
                 {["SKU", "Name", "MSRP", "Wholesale", "Factory Cost", "Freight", "Duties", "Other", "Landed Cost", "Units Sold", "Total COGS", "Gross Profit"].map(h => (
-                  <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#555", padding: "10px 10px", textAlign: h === "SKU" || h === "Name" ? "left" : "right", borderBottom: "0.5px solid rgba(255,255,255,0.08)", whiteSpace: "nowrap" }}>{h}</th>
+                  <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B919A", padding: "10px 10px", textAlign: h === "SKU" || h === "Name" ? "left" : "right", borderBottom: "0.5px solid rgba(255,255,255,0.08)", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -150,12 +150,12 @@ export default function CogsPage() {
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
                     <td style={{ padding: "8px 10px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)", whiteSpace: "nowrap" }}>{entry.sku_code}</td>
-                    <td style={{ padding: "8px 10px", fontSize: "11px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.name}</td>
+                    <td style={{ padding: "8px 10px", fontSize: "11px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.name}</td>
                     <td style={{ padding: "8px 10px", borderBottom: "0.5px solid rgba(255,255,255,0.04)", textAlign: "right" }}>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#666" }}>${entry.msrp.toFixed(2)}</span>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#9BA0A8" }}>${entry.msrp.toFixed(2)}</span>
                     </td>
                     <td style={{ padding: "8px 10px", borderBottom: "0.5px solid rgba(255,255,255,0.04)", textAlign: "right" }}>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#666" }}>${entry.wholesaler_price.toFixed(2)}</span>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#9BA0A8" }}>${entry.wholesaler_price.toFixed(2)}</span>
                     </td>
                     {["factory_cost", "freight_cost", "duties_cost", "other_cost"].map(key => (
                       <td key={key} style={{ padding: "4px 6px", borderBottom: "0.5px solid rgba(255,255,255,0.04)", textAlign: "right" }}>
@@ -179,8 +179,8 @@ export default function CogsPage() {
               })}
             </tbody>
             <tfoot>
-              <tr style={{ background: "#1A1E22" }}>
-                <td colSpan={10} style={{ padding: "10px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#555", textAlign: "right" }}>Totals</td>
+              <tr style={{ background: "#262B32" }}>
+                <td colSpan={10} style={{ padding: "10px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", textAlign: "right" }}>Totals</td>
                 <td style={{ padding: "10px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#A91E22", textAlign: "right" }}>${getTotalCogs().toFixed(2)}</td>
                 <td style={{ padding: "10px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#5A9E5A", textAlign: "right" }}>${getTotalGrossProfit().toFixed(2)}</td>
               </tr>

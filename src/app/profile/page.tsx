@@ -97,11 +97,11 @@ export default function ProfilePage() {
     setSavingPassword(false)
   }
 
-  const inputStyle = { width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "10px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
-  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#666", marginBottom: "6px" }
+  const inputStyle = { width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "10px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
+  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#9BA0A8", marginBottom: "6px" }
 
   if (loading) return (
-    <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
+    <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
   )
 
   const initials = form.full_name ? form.full_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "EF"
@@ -112,7 +112,7 @@ export default function ProfilePage() {
       <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Account</p>
         <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>My Profile</h1>
-        <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>Update your name, contact details, and password</p>
+        <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif" }}>Update your name, contact details, and password</p>
       </div>
 
       {/* Temp password warning banner */}
@@ -121,7 +121,7 @@ export default function ProfilePage() {
           <AlertTriangle size={20} color="#C4A93A" style={{ flexShrink: 0, marginTop: "1px" }} />
           <div>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#C4A93A", margin: "0 0 4px" }}>Temporary Password Active</p>
-            <p style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+            <p style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
               You are using a temporary password. Please update it below before using EdelFit.
             </p>
           </div>
@@ -129,21 +129,21 @@ export default function ProfilePage() {
       )}
 
       {/* Avatar */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px", background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "20px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "20px" }}>
         <div style={{ width: "56px", height: "56px", background: "#A91E22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", fontWeight: 700, color: "#fff", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.06em", flexShrink: 0 }}>
           {initials || <User size={22} color="#fff" />}
         </div>
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, color: "#fff", margin: 0 }}>{form.full_name || "No name set"}</p>
-          <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{form.email}</p>
+          <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{form.email}</p>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", margin: "4px 0 0" }}>Administrator</p>
         </div>
       </div>
 
       {/* Profile details */}
-      <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>Profile Details</span>
+      <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32" }}>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9BA0A8" }}>Profile Details</span>
         </div>
         <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
@@ -158,19 +158,19 @@ export default function ProfilePage() {
           </div>
           <div>
             <label style={labelStyle}>Email (cannot be changed here)</label>
-            <input style={{ ...inputStyle, color: "#555", cursor: "not-allowed" }} value={form.email} disabled />
+            <input style={{ ...inputStyle, color: "#8B919A", cursor: "not-allowed" }} value={form.email} disabled />
           </div>
           {error && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}>{error}</div>}
-          <button onClick={handleSaveProfile} disabled={saving} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: saved ? "#5A9E5A" : saving ? "#333" : "#A91E22", border: "none", padding: "11px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+          <button onClick={handleSaveProfile} disabled={saving} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: saved ? "#5A9E5A" : saving ? "#666C75" : "#A91E22", border: "none", padding: "11px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
             <Save size={14} />{saved ? "Saved!" : saving ? "Saving..." : "Save Profile"}
           </button>
         </div>
       </div>
 
       {/* Change password */}
-      <div style={{ background: "#22262B", border: `0.5px solid ${!passwordChanged ? "rgba(196,169,58,0.3)" : "rgba(255,255,255,0.10)"}`, borderTop: !passwordChanged ? "2px solid #C4A93A" : "0.5px solid rgba(255,255,255,0.10)" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: !passwordChanged ? "#C4A93A" : "#666" }}>
+      <div style={{ background: "#2E343C", border: `0.5px solid ${!passwordChanged ? "rgba(196,169,58,0.3)" : "rgba(255,255,255,0.10)"}`, borderTop: !passwordChanged ? "2px solid #C4A93A" : "0.5px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: !passwordChanged ? "#C4A93A" : "#9BA0A8" }}>
             {!passwordChanged ? "⚠ Change Your Password" : "Change Password"}
           </span>
           {passwordSaved && (
@@ -195,10 +195,10 @@ export default function ProfilePage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input type="checkbox" id="show_pw" checked={showPasswords} onChange={e => setShowPasswords(e.target.checked)} style={{ cursor: "pointer" }} />
-            <label htmlFor="show_pw" style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Show passwords</label>
+            <label htmlFor="show_pw" style={{ fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Show passwords</label>
           </div>
           {passwordError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}>{passwordError}</div>}
-          <button onClick={handleChangePassword} disabled={savingPassword || !passwordForm.new_password} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: passwordSaved ? "#5A9E5A" : savingPassword ? "#333" : !passwordChanged ? "#C4A93A" : "#A91E22", border: "none", padding: "11px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+          <button onClick={handleChangePassword} disabled={savingPassword || !passwordForm.new_password} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: passwordSaved ? "#5A9E5A" : savingPassword ? "#666C75" : !passwordChanged ? "#C4A93A" : "#A91E22", border: "none", padding: "11px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
             <Save size={14} />{passwordSaved ? "Password Updated!" : savingPassword ? "Updating..." : "Update Password"}
           </button>
         </div>

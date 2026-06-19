@@ -269,7 +269,7 @@ export default function AlertsPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Operations</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Alerts</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
             {loading ? "Loading..." : `${alerts.length} total alerts — payments, dealer signups, orders`}
           </p>
         </div>
@@ -286,14 +286,14 @@ export default function AlertsPage() {
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px" }}>
         {[
-          { label: "Critical", value: criticalCount.toString(), color: criticalCount > 0 ? "#A91E22" : "#5A9E5A", top: criticalCount > 0 ? "#A91E22" : "#2A2A2A" },
-          { label: "Due Soon", value: warningCount.toString(), color: warningCount > 0 ? "#C4A93A" : "#5A9E5A", top: "#2A2A2A" },
-          { label: "Dealer Signups", value: dealerCount.toString(), color: dealerCount > 0 ? "#C4A93A" : "#5A9E5A", top: dealerCount > 0 ? "#C4A93A" : "#2A2A2A", href: "/approvals" },
+          { label: "Critical", value: criticalCount.toString(), color: criticalCount > 0 ? "#A91E22" : "#5A9E5A", top: criticalCount > 0 ? "#A91E22" : "#3A3F47" },
+          { label: "Due Soon", value: warningCount.toString(), color: warningCount > 0 ? "#C4A93A" : "#5A9E5A", top: "#3A3F47" },
+          { label: "Dealer Signups", value: dealerCount.toString(), color: dealerCount > 0 ? "#C4A93A" : "#5A9E5A", top: dealerCount > 0 ? "#C4A93A" : "#3A3F47", href: "/approvals" },
           { label: "Owed to Factory", value: `$${Math.round(totalOwed).toLocaleString()}`, color: "#A91E22", top: "#A91E22" },
-          { label: "Total Receivable", value: `$${Math.round(totalReceivable).toLocaleString()}`, color: "#5A9E5A", top: "#2A2A2A" },
+          { label: "Total Receivable", value: `$${Math.round(totalReceivable).toLocaleString()}`, color: "#5A9E5A", top: "#3A3F47" },
         ].map(stat => (
-          <div key={stat.label} onClick={() => stat.href && router.push(stat.href)} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${stat.top}`, padding: "16px 18px", cursor: stat.href ? "pointer" : "default" }}>
-            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888", marginBottom: "6px" }}>{stat.label}</p>
+          <div key={stat.label} onClick={() => stat.href && router.push(stat.href)} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${stat.top}`, padding: "16px 18px", cursor: stat.href ? "pointer" : "default" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "6px" }}>{stat.label}</p>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "22px", fontWeight: 700, color: stat.color, lineHeight: 1, margin: 0 }}>{stat.value}</p>
           </div>
         ))}
@@ -303,14 +303,14 @@ export default function AlertsPage() {
       <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
           {(["all", "critical", "warning", "info", "completed"] as const).map(s => (
-            <button key={s} onClick={() => setFilter(s)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "8px 12px", cursor: "pointer", border: "none", background: "transparent", whiteSpace: "nowrap", color: filter === s ? "#fff" : "#555", borderBottom: filter === s ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
+            <button key={s} onClick={() => setFilter(s)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "8px 12px", cursor: "pointer", border: "none", background: "transparent", whiteSpace: "nowrap", color: filter === s ? "#fff" : "#8B919A", borderBottom: filter === s ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
               {s === "all" ? `All (${alerts.length})` : SEVERITY_CONFIG[s].label}
             </button>
           ))}
         </div>
         <div style={{ display: "flex", gap: "6px", marginLeft: "auto", flexWrap: "wrap" }}>
           {(["all", "dealer_signup", "order_placed", "payment_in", "payment_out", "shipment"] as const).map(c => (
-            <button key={c} onClick={() => setCategoryFilter(c)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "5px 10px", cursor: "pointer", color: categoryFilter === c ? "#fff" : "#555", background: categoryFilter === c ? "rgba(255,255,255,0.08)" : "transparent", border: `0.5px solid ${categoryFilter === c ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)"}` }}>
+            <button key={c} onClick={() => setCategoryFilter(c)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "5px 10px", cursor: "pointer", color: categoryFilter === c ? "#fff" : "#8B919A", background: categoryFilter === c ? "rgba(255,255,255,0.08)" : "transparent", border: `0.5px solid ${categoryFilter === c ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)"}` }}>
               {c === "all" ? "All Types" : c === "dealer_signup" ? "👤 Dealer Signups" : c === "order_placed" ? "📦 Orders" : c === "payment_in" ? "↓ Money In" : c === "payment_out" ? "↑ Money Out" : "✈ Shipments"}
             </button>
           ))}
@@ -319,12 +319,12 @@ export default function AlertsPage() {
 
       {/* Alert list */}
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading alerts...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading alerts...</div>
       ) : visible.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
           <CheckCircle size={32} color="#5A9E5A" style={{ margin: "0 auto 12px" }} />
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#5A9E5A", margin: "0 0 4px" }}>All Clear</p>
-          <p style={{ fontSize: "13px", color: "#444", fontFamily: "'Barlow', sans-serif", margin: 0 }}>No alerts matching this filter.</p>
+          <p style={{ fontSize: "13px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: 0 }}>No alerts matching this filter.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -334,7 +334,7 @@ export default function AlertsPage() {
             const daysLeft = daysUntil(alert.dueDate)
 
             return (
-              <div key={alert.id} style={{ background: "#22262B", border: `0.5px solid ${config.border}`, borderLeft: `3px solid ${config.color}`, display: "flex", alignItems: "flex-start", gap: "16px", padding: "16px 20px" }}>
+              <div key={alert.id} style={{ background: "#2E343C", border: `0.5px solid ${config.border}`, borderLeft: `3px solid ${config.color}`, display: "flex", alignItems: "flex-start", gap: "16px", padding: "16px 20px" }}>
                 <div style={{ width: "36px", height: "36px", flexShrink: 0, background: config.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Icon size={18} color={config.color} />
                 </div>
@@ -343,11 +343,11 @@ export default function AlertsPage() {
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "4px" }}>
                     <div>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: config.color, marginRight: "8px" }}>{config.label}</span>
-                      <span style={{ fontSize: "10px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>{alert.reference}</span>
+                      <span style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>{alert.reference}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       {alert.amount && <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: config.color }}>${alert.amount.toLocaleString()}</span>}
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, color: daysLeft < 0 ? "#A91E22" : daysLeft < 7 ? "#C4A93A" : "#555" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, color: daysLeft < 0 ? "#A91E22" : daysLeft < 7 ? "#C4A93A" : "#8B919A" }}>
                         {alert.severity === "completed" ? "Done" : daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? "Today" : `${daysLeft}d`}
                       </span>
                     </div>
@@ -357,14 +357,14 @@ export default function AlertsPage() {
                   <p style={{ fontSize: "12px", color: "#777", fontFamily: "'Barlow', sans-serif", margin: "0 0 10px", fontWeight: 400 }}>{alert.description}</p>
 
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "11px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>
+                    <span style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>
                       {alert.severity === "completed" ? "Completed" : `Due ${formatDate(alert.dueDate)}`}
                     </span>
                     <button onClick={() => router.push(alert.actionHref)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: config.color, background: config.bg, border: `0.5px solid ${config.border}`, padding: "4px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
                       {alert.actionLabel} <ChevronRight size={11} />
                     </button>
                     {alert.severity !== "completed" && (
-                      <button onClick={() => handleDismiss(alert)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#333", background: "transparent", border: "0.5px solid rgba(255,255,255,0.06)", padding: "4px 10px", cursor: "pointer" }}>
+                      <button onClick={() => handleDismiss(alert)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666C75", background: "transparent", border: "0.5px solid rgba(255,255,255,0.06)", padding: "4px 10px", cursor: "pointer" }}>
                         Dismiss
                       </button>
                     )}

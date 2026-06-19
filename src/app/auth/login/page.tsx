@@ -179,14 +179,14 @@ export default function LoginPage() {
   }
 
   const inputStyle = {
-    width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)",
+    width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)",
     color: "#fff", padding: "11px 14px", fontSize: "14px",
     fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const,
   }
   const labelStyle = {
     display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif",
     fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em",
-    textTransform: "uppercase" as const, color: "#555", marginBottom: "6px",
+    textTransform: "uppercase" as const, color: "#8B919A", marginBottom: "6px",
   }
   const smallInputStyle = { ...inputStyle, padding: "9px 12px", fontSize: "13px" }
 
@@ -201,15 +201,15 @@ export default function LoginPage() {
             alt="EdelFit"
             style={{ height: "90px", width: "auto", filter: "invert(1)", display: "block", margin: "0 auto 16px" }}
           />
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#333", marginTop: "4px" }}>Operations + Dealer Portal</p>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#666C75", marginTop: "4px" }}>Operations + Dealer Portal</p>
         </div>
 
-        <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22" }}>
+        <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.08)", borderTop: "2px solid #A91E22" }}>
 
           {/* Tabs */}
           <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.08)" }}>
             {(["login", "signup"] as const).map(t => (
-              <button key={t} onClick={() => { setTab(t); setLoginError(""); setSignupError(""); setStep(1) }} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", padding: "14px", cursor: "pointer", border: "none", background: "transparent", color: tab === t ? "#fff" : "#444", borderBottom: tab === t ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
+              <button key={t} onClick={() => { setTab(t); setLoginError(""); setSignupError(""); setStep(1) }} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", padding: "14px", cursor: "pointer", border: "none", background: "transparent", color: tab === t ? "#fff" : "#787E87", borderBottom: tab === t ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
                 {t === "login" ? "Sign In" : "Request Access"}
               </button>
             ))}
@@ -228,23 +228,23 @@ export default function LoginPage() {
                   <label style={labelStyle}>Password</label>
                   <div style={{ position: "relative" }}>
                     <input type={showLoginPassword ? "text" : "password"} style={{ ...inputStyle, paddingRight: "44px" }} placeholder="••••••••" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required autoComplete="current-password" />
-                    <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#787E87", cursor: "pointer", padding: 0 }}>
                       {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
                 {loginError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", lineHeight: "1.5" }}>{loginError}</div>}
-                <button type="submit" disabled={loginLoading} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: loginLoading ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: loginLoading ? "not-allowed" : "pointer", marginTop: "4px" }}>
+                <button type="submit" disabled={loginLoading} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: loginLoading ? "#666C75" : "#A91E22", border: "none", padding: "13px", cursor: loginLoading ? "not-allowed" : "pointer", marginTop: "4px" }}>
                   {loginLoading ? "Signing in..." : "Sign In →"}
                 </button>
                 {forgotSent ? (
                   <p style={{ fontSize: "12px", color: "#5A9E5A", fontFamily: "'Barlow', sans-serif", textAlign: "center", margin: "10px 0 0" }}>✓ Password reset email sent — check your inbox</p>
                 ) : (
-                  <button type="button" onClick={handleForgotPassword} disabled={forgotLoading} style={{ background: "none", border: "none", color: "#555", fontSize: "12px", fontFamily: "'Barlow', sans-serif", cursor: "pointer", textAlign: "center", width: "100%", marginTop: "10px", textDecoration: "underline" }}>
+                  <button type="button" onClick={handleForgotPassword} disabled={forgotLoading} style={{ background: "none", border: "none", color: "#8B919A", fontSize: "12px", fontFamily: "'Barlow', sans-serif", cursor: "pointer", textAlign: "center", width: "100%", marginTop: "10px", textDecoration: "underline" }}>
                     {forgotLoading ? "Sending..." : "Forgot password?"}
                   </button>
                 )}
-                <p style={{ fontSize: "11px", color: "#333", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+                <p style={{ fontSize: "11px", color: "#666C75", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
                   Don't have an account? <span onClick={() => setTab("signup")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>Request access</span>
                 </p>
               </form>
@@ -253,11 +253,11 @@ export default function LoginPage() {
             {/* SIGNUP — Step 1: Contact + Company Info */}
             {tab === "signup" && !signupDone && step === 1 && (
               <form onSubmit={handleNextStep} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <p style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px", lineHeight: "1.5" }}>
+                <p style={{ fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px", lineHeight: "1.5" }}>
                   Create a dealer account to access the Edel Golf ordering portal. Tell us about yourself and your business.
                 </p>
 
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: "4px 0 -4px" }}>Contact Info</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", margin: "4px 0 -4px" }}>Contact Info</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   <div>
                     <label style={labelStyle}>First Name *</label>
@@ -280,7 +280,7 @@ export default function LoginPage() {
                   <input type="email" style={smallInputStyle} placeholder="john@company.com" value={signupForm.email} onChange={e => updateSignup("email", e.target.value)} required />
                 </div>
 
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: "4px 0 -4px" }}>Business Info</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", margin: "4px 0 -4px" }}>Business Info</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   <div>
                     <label style={labelStyle}>Company Name</label>
@@ -324,7 +324,7 @@ export default function LoginPage() {
                 <button type="submit" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "13px", cursor: "pointer", marginTop: "4px" }}>
                   Continue to Password →
                 </button>
-                <p style={{ fontSize: "11px", color: "#333", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+                <p style={{ fontSize: "11px", color: "#666C75", textAlign: "center", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
                   Already have an account? <span onClick={() => setTab("login")} style={{ color: "#A91E22", cursor: "pointer", fontWeight: 600 }}>Sign in</span>
                 </p>
               </form>
@@ -333,16 +333,16 @@ export default function LoginPage() {
             {/* SIGNUP — Step 2: Password */}
             {tab === "signup" && !signupDone && step === 2 && (
               <form onSubmit={handleSignup} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                <div style={{ background: "#13161A", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 14px", marginBottom: "4px" }}>
+                <div style={{ background: "#23282E", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 14px", marginBottom: "4px" }}>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#5A9E5A", margin: "0 0 4px" }}>✓ Account Info Saved</p>
-                  <p style={{ fontSize: "12px", color: "#666", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{signupForm.first_name} {signupForm.last_name} · {signupForm.email}{signupForm.company ? ` · ${signupForm.company}` : ""}</p>
+                  <p style={{ fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{signupForm.first_name} {signupForm.last_name} · {signupForm.email}{signupForm.company ? ` · ${signupForm.company}` : ""}</p>
                 </div>
 
                 <div>
                   <label style={labelStyle}>Create Password * (min 8 characters)</label>
                   <div style={{ position: "relative" }}>
                     <input type={showPassword ? "text" : "password"} style={{ ...inputStyle, paddingRight: "44px" }} placeholder="••••••••" value={signupForm.password} onChange={e => updateSignup("password", e.target.value)} required minLength={8} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#787E87", cursor: "pointer", padding: 0 }}>
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
@@ -352,7 +352,7 @@ export default function LoginPage() {
                   <label style={labelStyle}>Confirm Password *</label>
                   <div style={{ position: "relative" }}>
                     <input type={showConfirm ? "text" : "password"} style={{ ...inputStyle, paddingRight: "44px", borderColor: signupForm.confirm_password && signupForm.password !== signupForm.confirm_password ? "rgba(169,30,34,0.5)" : "rgba(255,255,255,0.12)" }} placeholder="••••••••" value={signupForm.confirm_password} onChange={e => updateSignup("confirm_password", e.target.value)} required />
-                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#444", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#787E87", cursor: "pointer", padding: 0 }}>
                       {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
@@ -364,8 +364,8 @@ export default function LoginPage() {
                 {signupError && <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.25)", padding: "10px 14px", fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif" }}>{signupError}</div>}
 
                 <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-                  <button type="button" onClick={() => setStep(1)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#666", background: "transparent", border: "1px solid #333", padding: "11px 16px", cursor: "pointer" }}>← Back</button>
-                  <button type="submit" disabled={signupLoading || (!!signupForm.confirm_password && signupForm.password !== signupForm.confirm_password)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: signupLoading ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: signupLoading ? "not-allowed" : "pointer" }}>
+                  <button type="button" onClick={() => setStep(1)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9BA0A8", background: "transparent", border: "1px solid #666C75", padding: "11px 16px", cursor: "pointer" }}>← Back</button>
+                  <button type="submit" disabled={signupLoading || (!!signupForm.confirm_password && signupForm.password !== signupForm.confirm_password)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: signupLoading ? "#666C75" : "#A91E22", border: "none", padding: "13px", cursor: signupLoading ? "not-allowed" : "pointer" }}>
                     {signupLoading ? "Submitting..." : "Request Access →"}
                   </button>
                 </div>
@@ -377,9 +377,9 @@ export default function LoginPage() {
               <div style={{ textAlign: "center", padding: "20px 0" }}>
                 <div style={{ width: "52px", height: "52px", background: "rgba(196,169,58,0.1)", border: "1px solid rgba(196,169,58,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "22px", margin: "0 auto 16px" }}>⏳</div>
                 <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: "0 0 10px" }}>Request Submitted</h3>
-                <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 8px", lineHeight: "1.6" }}>Your account request has been sent to the Edel Golf team.</p>
-                <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px", lineHeight: "1.6" }}>Once approved, you can log in with the password you just set.</p>
-                <button onClick={() => { setTab("login"); setSignupDone(false); setStep(1) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>Back to Sign In</button>
+                <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: "0 0 8px", lineHeight: "1.6" }}>Your account request has been sent to the Edel Golf team.</p>
+                <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px", lineHeight: "1.6" }}>Once approved, you can log in with the password you just set.</p>
+                <button onClick={() => { setTab("login"); setSignupDone(false); setStep(1) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer" }}>Back to Sign In</button>
               </div>
             )}
           </div>

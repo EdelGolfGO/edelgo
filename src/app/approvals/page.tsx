@@ -165,8 +165,8 @@ export default function DealerApprovalsPage() {
     loadData()
   }
 
-  const inputStyle = { background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "100%", boxSizing: "border-box" as const }
-  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#555", marginBottom: "4px" }
+  const inputStyle = { background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "100%", boxSizing: "border-box" as const }
+  const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#8B919A", marginBottom: "4px" }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -175,18 +175,18 @@ export default function DealerApprovalsPage() {
       <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Admin</p>
         <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Dealer Approvals</h1>
-        <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
+        <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
           {pending.length} account{pending.length !== 1 ? "s" : ""} pending approval
         </p>
       </div>
 
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
       ) : pending.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(90,158,90,0.2)", borderTop: "2px solid #5A9E5A", padding: "48px 20px", textAlign: "center" }}>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(90,158,90,0.2)", borderTop: "2px solid #5A9E5A", padding: "48px 20px", textAlign: "center" }}>
           <CheckCircle size={32} color="#5A9E5A" style={{ margin: "0 auto 12px" }} />
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#5A9E5A", margin: "0 0 6px" }}>All Clear</p>
-          <p style={{ fontSize: "13px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>No dealer accounts pending approval.</p>
+          <p style={{ fontSize: "13px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>No dealer accounts pending approval.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -195,7 +195,7 @@ export default function DealerApprovalsPage() {
             const isExpanded = expanded === profile.id
 
             return (
-              <div key={profile.id} style={{ background: "#22262B", border: "0.5px solid rgba(196,169,58,0.25)", borderTop: "2px solid #C4A93A" }}>
+              <div key={profile.id} style={{ background: "#2E343C", border: "0.5px solid rgba(196,169,58,0.25)", borderTop: "2px solid #C4A93A" }}>
 
                 {/* Header row - always visible */}
                 <div onClick={() => setExpanded(isExpanded ? null : profile.id)} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}>
@@ -206,10 +206,10 @@ export default function DealerApprovalsPage() {
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "15px", fontWeight: 700, color: "#fff", margin: 0 }}>{profile.full_name || "Unknown"}</p>
                     <div style={{ display: "flex", gap: "12px", marginTop: "3px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Mail size={10} color="#555" />
+                        <Mail size={10} color="#8B919A" />
                         <span style={{ fontSize: "11px", color: "#777", fontFamily: "'Barlow', sans-serif" }}>{profile.email}</span>
                       </div>
-                      <span style={{ fontSize: "11px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>
+                      <span style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>
                         {new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </span>
                     </div>
@@ -247,14 +247,14 @@ export default function DealerApprovalsPage() {
                     </div>
 
                     {/* Section: Dealer record */}
-                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Dealer Record</p>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Dealer Record</p>
 
                     {/* Link to existing toggle */}
                     <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
-                      <button onClick={() => updateForm(profile.id, "link_existing", false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !form.link_existing ? "#fff" : "#555", background: !form.link_existing ? "#A91E22" : "transparent", border: !form.link_existing ? "none" : "1px solid #333", padding: "6px 14px", cursor: "pointer" }}>
+                      <button onClick={() => updateForm(profile.id, "link_existing", false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !form.link_existing ? "#fff" : "#8B919A", background: !form.link_existing ? "#A91E22" : "transparent", border: !form.link_existing ? "none" : "1px solid #666C75", padding: "6px 14px", cursor: "pointer" }}>
                         Create New Dealer Record
                       </button>
-                      <button onClick={() => updateForm(profile.id, "link_existing", true)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: form.link_existing ? "#fff" : "#555", background: form.link_existing ? "#A91E22" : "transparent", border: form.link_existing ? "none" : "1px solid #333", padding: "6px 14px", cursor: "pointer" }}>
+                      <button onClick={() => updateForm(profile.id, "link_existing", true)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: form.link_existing ? "#fff" : "#8B919A", background: form.link_existing ? "#A91E22" : "transparent", border: form.link_existing ? "none" : "1px solid #666C75", padding: "6px 14px", cursor: "pointer" }}>
                         Link to Existing Dealer
                       </button>
                     </div>
@@ -313,7 +313,7 @@ export default function DealerApprovalsPage() {
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <input type="checkbox" id={`tax-${profile.id}`} checked={form.tax_exempt} onChange={e => updateForm(profile.id, "tax_exempt", e.target.checked)} style={{ cursor: "pointer" }} />
-                          <label htmlFor={`tax-${profile.id}`} style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Tax Exempt</label>
+                          <label htmlFor={`tax-${profile.id}`} style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Tax Exempt</label>
                         </div>
                         <div>
                           <label style={labelStyle}>Internal Notes</label>
@@ -323,18 +323,18 @@ export default function DealerApprovalsPage() {
                     )}
 
                     {/* Summary of what will be set */}
-                    <div style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 16px", marginBottom: "16px", display: "flex", gap: "24px" }}>
+                    <div style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 16px", marginBottom: "16px", display: "flex", gap: "24px" }}>
                       <div>
                         <p style={labelStyle}>Pricing</p>
                         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#6A9CC8", margin: 0 }}>{PRICING_TIERS.find(t => t.value === form.pricing_tier)?.label}</p>
                       </div>
                       <div>
                         <p style={labelStyle}>Type</p>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#CCC", margin: 0 }}>{DEALER_TYPES.find(t => t.value === form.dealer_type)?.label}</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#E0E2E6", margin: 0 }}>{DEALER_TYPES.find(t => t.value === form.dealer_type)?.label}</p>
                       </div>
                       <div>
                         <p style={labelStyle}>Terms</p>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#CCC", margin: 0 }}>{PAYMENT_TERMS.find(t => t.value === form.payment_terms)?.label}</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#E0E2E6", margin: 0 }}>{PAYMENT_TERMS.find(t => t.value === form.payment_terms)?.label}</p>
                       </div>
                     </div>
 
@@ -343,7 +343,7 @@ export default function DealerApprovalsPage() {
                       <button onClick={() => handleDeny(profile)} disabled={approving === profile.id} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "1px solid rgba(169,30,34,0.3)", padding: "10px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                         <XCircle size={13} /> Deny Access
                       </button>
-                      <button onClick={() => handleApprove(profile)} disabled={approving === profile.id} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: approving === profile.id ? "#333" : "#5A9E5A", border: "none", padding: "11px", cursor: approving === profile.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      <button onClick={() => handleApprove(profile)} disabled={approving === profile.id} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: approving === profile.id ? "#666C75" : "#5A9E5A", border: "none", padding: "11px", cursor: approving === profile.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                         <CheckCircle size={15} />
                         {approving === profile.id ? "Approving..." : "Approve & Create Dealer Record →"}
                       </button>

@@ -28,6 +28,8 @@ export default function ForecastPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [sortBy, setSortBy] = useState<"available_asc" | "available_desc" | "reorder_cost_desc" | "sku_asc" | "category">("available_asc")
 
   useEffect(() => { loadInventory() }, [])
 
@@ -56,9 +58,6 @@ export default function ForecastPage() {
     return getReorderQty(item) * (item.sku?.unit_cost || 0)
   }
 
-  const needsReorder = inventory.filter(i => i.qty_available <= i.min_stock)
-  const totalReorderCost = needsReorder.reduce((sum, i) => sum + getReorderCost(i), 0)
-
   function toggleSelect(id: string) {
     setSelectedItems(prev => {
       const next = new Set(prev)
@@ -69,12 +68,39 @@ export default function ForecastPage() {
   }
 
   function selectAll() {
-    if (selectedItems.size === needsReorder.length) {
+    if (selectedItems.size === filteredNeedsReorder.length) {
       setSelectedItems(new Set())
     } else {
-      setSelectedItems(new Set(needsReorder.map(i => i.id)))
+      setSelectedItems(new Set(filteredNeedsReorder.map(i => i.id)))
     }
   }
+
+  const availableCategories = Array.from(
+    new Set(inventory.map(i => i.sku?.product?.category).filter(Boolean))
+  ) as string[]
+
+  const sortItems = (items: InventoryItem[]) => [...items].sort((a, b) => {
+    switch (sortBy) {
+      case "available_asc": return a.qty_available - b.qty_available
+      case "available_desc": return b.qty_available - a.qty_available
+      case "reorder_cost_desc": return getReorderCost(b) - getReorderCost(a)
+      case "sku_asc": return a.sku?.sku_code.localeCompare(b.sku?.sku_code)
+      case "category": return (a.sku?.product?.category || "").localeCompare(b.sku?.product?.category || "")
+      default: return 0
+    }
+  })
+
+  const filteredInventory = sortItems(
+    inventory.filter(i => categoryFilter === "all" || i.sku?.product?.category === categoryFilter)
+  )
+
+  const needsReorder = inventory.filter(i => i.qty_available <= i.min_stock)
+  const filteredNeedsReorder = sortItems(
+    needsReorder.filter(i => categoryFilter === "all" || i.sku?.product?.category === categoryFilter)
+  )
+  const totalReorderCost = filteredNeedsReorder.reduce((sum, i) => sum + getReorderCost(i), 0)
+
+  const selectStyle = { background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 12px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -84,7 +110,7 @@ export default function ForecastPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Inventory</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Reorder Forecast</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", textTransform: "none", letterSpacing: "normal", fontWeight: 400 }}>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", textTransform: "none", letterSpacing: "normal", fontWeight: 400 }}>
             SKUs at or below minimum stock — select to generate a PO
           </p>
         </div>
@@ -99,35 +125,59 @@ export default function ForecastPage() {
       {/* Summary stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
         {[
-          { label: "SKUs Need Reorder", value: needsReorder.length.toString(), color: needsReorder.length > 0 ? "#A91E22" : "#5A9E5A", top: needsReorder.length > 0 ? "#A91E22" : "#2A2A2A" },
-          { label: "Est. Reorder Cost", value: `$${Math.round(totalReorderCost).toLocaleString()}`, color: "#C4A93A", top: "#2A2A2A" },
-          { label: "Selected for PO", value: selectedItems.size.toString(), color: "#6A9CC8", top: "#2A2A2A" },
+          { label: "SKUs Need Reorder", value: filteredNeedsReorder.length.toString(), color: filteredNeedsReorder.length > 0 ? "#A91E22" : "#5A9E5A", top: filteredNeedsReorder.length > 0 ? "#A91E22" : "#3A3F47" },
+          { label: "Est. Reorder Cost", value: `$${Math.round(totalReorderCost).toLocaleString()}`, color: "#C4A93A", top: "#3A3F47" },
+          { label: "Selected for PO", value: selectedItems.size.toString(), color: "#6A9CC8", top: "#3A3F47" },
         ].map(stat => (
-          <div key={stat.label} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${stat.top}`, padding: "18px 20px" }}>
-            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888", marginBottom: "8px" }}>{stat.label}</p>
+          <div key={stat.label} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${stat.top}`, padding: "18px 20px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>{stat.label}</p>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "28px", fontWeight: 700, color: stat.color, lineHeight: 1, margin: 0 }}>{stat.value}</p>
           </div>
         ))}
       </div>
 
+      {/* Filter + Sort controls */}
+      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+        <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={selectStyle}>
+          <option value="all">All Categories</option>
+          {availableCategories.sort().map(cat => (
+            <option key={cat} value={cat}>{cat.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}</option>
+          ))}
+        </select>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={selectStyle}>
+          <option value="available_asc">Available: Low → High</option>
+          <option value="available_desc">Available: High → Low</option>
+          <option value="reorder_cost_desc">Reorder Cost: High → Low</option>
+          <option value="category">Category</option>
+          <option value="sku_asc">SKU Code A–Z</option>
+        </select>
+        {categoryFilter !== "all" && (
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "4px 10px" }}>
+            {categoryFilter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} Only
+          </span>
+        )}
+      </div>
+
       {/* Visual stock chart */}
-      <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>Stock Level Visual — All SKUs</span>
+      <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9BA0A8" }}>
+            Stock Level Visual — {categoryFilter === "all" ? "All SKUs" : categoryFilter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+          </span>
           <div style={{ display: "flex", gap: "16px" }}>
             {[{ color: "#A91E22", label: "Critical" }, { color: "#C4A93A", label: "Low" }, { color: "#5A9E5A", label: "OK" }, { color: "#6A9CC8", label: "On Order" }].map(l => (
               <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                 <div style={{ width: "8px", height: "8px", background: l.color }} />
-                <span style={{ fontSize: "10px", color: "#555", fontFamily: "'Barlow', sans-serif" }}>{l.label}</span>
+                <span style={{ fontSize: "10px", color: "#8B919A", fontFamily: "'Barlow', sans-serif" }}>{l.label}</span>
               </div>
             ))}
           </div>
         </div>
         <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
           {loading ? (
-            <div style={{ padding: "40px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
+            <div style={{ padding: "40px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading...</div>
           ) : (
-            inventory.map(item => {
+            filteredInventory.map(item => {
               const status = getStockStatus(item)
               const barColor = status === "critical" ? "#A91E22" : status === "low" ? "#C4A93A" : "#5A9E5A"
               const availPct = item.max_stock > 0 ? Math.min(100, (item.qty_available / item.max_stock) * 100) : 0
@@ -137,22 +187,19 @@ export default function ForecastPage() {
               return (
                 <div key={item.id} style={{ display: "grid", gridTemplateColumns: "180px 1fr 80px", gap: "12px", alignItems: "center" }}>
                   <div>
-                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#CCC", margin: 0, letterSpacing: "0.04em" }}>{item.sku?.sku_code}</p>
-                    <p style={{ fontSize: "10px", color: "#444", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sku?.name}</p>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#E0E2E6", margin: 0, letterSpacing: "0.04em" }}>{item.sku?.sku_code}</p>
+                    <p style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sku?.name}</p>
                   </div>
                   <div style={{ position: "relative", height: "20px", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }}>
-                    {/* Available stock bar */}
                     <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${availPct}%`, background: barColor, borderRadius: "2px", transition: "width 0.3s" }} />
-                    {/* On order bar */}
                     {onOrderPct > 0 && (
                       <div style={{ position: "absolute", left: `${availPct}%`, top: 0, height: "100%", width: `${onOrderPct}%`, background: "rgba(106,156,200,0.4)", borderRadius: "0 2px 2px 0" }} />
                     )}
-                    {/* Min stock line */}
                     <div style={{ position: "absolute", left: `${minPct}%`, top: 0, height: "100%", width: "2px", background: "rgba(255,255,255,0.3)" }} />
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: barColor }}>{item.qty_available}</span>
-                    <span style={{ fontSize: "10px", color: "#444", fontFamily: "'Barlow', sans-serif" }}> / {item.max_stock}</span>
+                    <span style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}> / {item.max_stock}</span>
                   </div>
                 </div>
               )
@@ -162,33 +209,33 @@ export default function ForecastPage() {
       </div>
 
       {/* Reorder table */}
-      {needsReorder.length > 0 && (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(169,30,34,0.2)", borderTop: "2px solid #A91E22" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {filteredNeedsReorder.length > 0 && (
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(169,30,34,0.2)", borderTop: "2px solid #A91E22" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <AlertTriangle size={14} color="#A91E22" />
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#A91E22" }}>
-                Reorder Required — {needsReorder.length} SKUs
+                Reorder Required — {filteredNeedsReorder.length} SKUs
               </span>
             </div>
             <button
               onClick={selectAll}
-              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "5px 10px", cursor: "pointer" }}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "5px 10px", cursor: "pointer" }}
             >
-              {selectedItems.size === needsReorder.length ? "Deselect All" : "Select All"}
+              {selectedItems.size === filteredNeedsReorder.length ? "Deselect All" : "Select All"}
             </button>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "#1A1E22" }}>
+              <tr style={{ background: "#262B32" }}>
                 <th style={{ width: "40px", padding: "8px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}></th>
-                {["SKU", "Product", "Available", "Min", "Reorder Qty", "Est. Cost", "Action"].map(h => (
-                  <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#555", padding: "8px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</th>
+                {["SKU", "Product", "Category", "Available", "Min", "Reorder Qty", "Est. Cost", "Action"].map(h => (
+                  <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", padding: "8px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {needsReorder.map(item => {
+              {filteredNeedsReorder.map(item => {
                 const status = getStockStatus(item)
                 const reorderQty = getReorderQty(item)
                 const reorderCost = getReorderCost(item)
@@ -201,34 +248,38 @@ export default function ForecastPage() {
                     onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent" }}
                   >
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
-                      <div style={{ width: "16px", height: "16px", border: `1.5px solid ${isSelected ? "#A91E22" : "#444"}`, background: isSelected ? "#A91E22" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ width: "16px", height: "16px", border: `1.5px solid ${isSelected ? "#A91E22" : "#787E87"}`, background: isSelected ? "#A91E22" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {isSelected && <span style={{ color: "#fff", fontSize: "10px", lineHeight: 1 }}>✓</span>}
                       </div>
                     </td>
                     <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)", letterSpacing: "0.04em" }}>{item.sku?.sku_code}</td>
-                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku?.name}</td>
+                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku?.name}</td>
+                    <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#B5BAC2", background: "rgba(255,255,255,0.05)", padding: "2px 7px" }}>
+                        {item.sku?.product?.category?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </td>
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: status === "critical" ? "#A91E22" : "#C4A93A" }}>{item.qty_available}</span>
                     </td>
-                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#666", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.min_stock}</td>
+                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.min_stock}</td>
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff" }}>{reorderQty}</span>
-                      <span style={{ fontSize: "10px", color: "#555", marginLeft: "4px", fontFamily: "'Barlow', sans-serif" }}>units</span>
+                      <span style={{ fontSize: "10px", color: "#8B919A", marginLeft: "4px", fontFamily: "'Barlow', sans-serif" }}>units</span>
                     </td>
                     <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#C4A93A", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       ${Math.round(reorderCost).toLocaleString()}
                     </td>
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isSelected ? "#A91E22" : "#555" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: isSelected ? "#A91E22" : "#8B919A" }}>
                         {isSelected ? "✓ Selected" : "Click to Select"}
                       </span>
                     </td>
                   </tr>
                 )
               })}
-              {/* Total row */}
-              <tr style={{ background: "#1A1E22" }}>
-                <td colSpan={6} style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#555", textAlign: "right" }}>
+              <tr style={{ background: "#262B32" }}>
+                <td colSpan={7} style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", textAlign: "right" }}>
                   Total Reorder Cost
                 </td>
                 <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff" }}>
@@ -241,10 +292,12 @@ export default function ForecastPage() {
         </div>
       )}
 
-      {needsReorder.length === 0 && !loading && (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(90,158,90,0.2)", borderTop: "2px solid #5A9E5A", padding: "40px 20px", textAlign: "center" }}>
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#5A9E5A", margin: "0 0 6px" }}>All Stock Levels Healthy</p>
-          <p style={{ fontSize: "13px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>No SKUs are below minimum stock threshold.</p>
+      {filteredNeedsReorder.length === 0 && !loading && (
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(90,158,90,0.2)", borderTop: "2px solid #5A9E5A", padding: "40px 20px", textAlign: "center" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#5A9E5A", margin: "0 0 6px" }}>
+            {categoryFilter !== "all" ? `No Reorders Needed — ${categoryFilter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}` : "All Stock Levels Healthy"}
+          </p>
+          <p style={{ fontSize: "13px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>No SKUs are below minimum stock threshold.</p>
         </div>
       )}
     </div>

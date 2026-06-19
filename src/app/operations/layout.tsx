@@ -15,7 +15,7 @@ export default function OperationsLayout({
         <Sidebar />
         <main style={{
           flex: 1,
-          background: "#1A1E22",
+          background: "#262B32",
           padding: "28px",
           overflowY: "auto",
           minHeight: "calc(100vh - 52px)",

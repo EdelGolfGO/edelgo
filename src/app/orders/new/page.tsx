@@ -39,8 +39,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   component: "Components",
 }
 
-const inputStyle = { width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
-const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#555", marginBottom: "5px" }
+const inputStyle = { width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
+const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#8B919A", marginBottom: "5px" }
 
 export default function NewOrderPage() {
   const router = useRouter()
@@ -138,7 +138,7 @@ export default function NewOrderPage() {
       order_number: orderNumber,
       dealer_id: manualEntry ? null : selectedDealer?.id || null,
       dealer_name: dealerName,
-      status: "approved",
+      status: "pending review",
       order_type: orderTypeSelection,
       total_amount: total,
       notes: [notes, extraNotes].filter(Boolean).join("\n"),
@@ -156,7 +156,6 @@ export default function NewOrderPage() {
         product_name: item.sku.name,
         quantity: item.quantity,
         unit_price: item.unit_price,
-        total_price: item.unit_price * item.quantity,
         configuration: {},
       }))
     )
@@ -178,9 +177,9 @@ export default function NewOrderPage() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "16px", textAlign: "center" }}>
         <div style={{ width: "64px", height: "64px", background: "rgba(90,158,90,0.1)", border: "1px solid rgba(90,158,90,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px" }}>✓</div>
         <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "28px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>Order Created</h2>
-        <p style={{ fontSize: "14px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Order has been created and auto-approved.</p>
+        <p style={{ fontSize: "14px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Order submitted for review. Approve it from All Orders.</p>
         <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
-          <button onClick={() => router.push("/orders/all")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px 20px", cursor: "pointer" }}>View All Orders</button>
+          <button onClick={() => router.push("/orders/all")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer" }}>View All Orders</button>
           <button onClick={() => { setSubmitted(false); setOrderItems([]); setManualName(""); setManualCompany(""); setManualEmail(""); setManualPO(""); setManualAddress1(""); setManualAddress2(""); setManualCity(""); setManualState(""); setManualPostal(""); setManualCountry("US"); setManualAddressType("commercial"); setManualInstructions(""); setSelectedDealer(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px 20px", cursor: "pointer" }}>New Order</button>
         </div>
       </div>
@@ -192,38 +191,38 @@ export default function NewOrderPage() {
 
       {/* Header */}
       <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
-        <button onClick={() => router.push("/dashboard")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "#555", cursor: "pointer", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px", padding: 0 }}>
+        <button onClick={() => router.push("/dashboard")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "#8B919A", cursor: "pointer", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "12px", padding: 0 }}>
           <ArrowLeft size={13} /> Back to Dashboard
         </button>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Orders</p>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>New Order</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <label style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#555" }}>Show all SKUs</label>
+            <label style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B919A" }}>Show all SKUs</label>
             <input type="checkbox" checked={showAllSkus} onChange={e => setShowAllSkus(e.target.checked)} style={{ cursor: "pointer" }} />
           </div>
         </div>
       </div>
 
       {/* Dealer selector */}
-      <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "16px 20px" }}>
+      <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "16px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", margin: 0 }}>Order For</p>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", margin: 0 }}>Order For</p>
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#444" }}>Type:</span>
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#787E87" }}>Type:</span>
               {(["wholesale", "fitter", "retail", "international", "factory", "misc"] as const).map(t => (
-                <button key={t} onClick={() => setOrderTypeSelection(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer", border: "none", background: orderTypeSelection === t ? "#A91E22" : "transparent", color: orderTypeSelection === t ? "#fff" : "#555", outline: orderTypeSelection === t ? "none" : "1px solid #2A2A2A" }}>
+                <button key={t} onClick={() => setOrderTypeSelection(t)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer", border: "none", background: orderTypeSelection === t ? "#A91E22" : "transparent", color: orderTypeSelection === t ? "#fff" : "#8B919A", outline: orderTypeSelection === t ? "none" : "1px solid #3A3F47" }}>
                   {t}
                 </button>
               ))}
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={() => setManualEntry(false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !manualEntry ? "#fff" : "#555", background: !manualEntry ? "#A91E22" : "transparent", border: !manualEntry ? "none" : "1px solid #333", padding: "5px 12px", cursor: "pointer" }}>
+            <button onClick={() => setManualEntry(false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !manualEntry ? "#fff" : "#8B919A", background: !manualEntry ? "#A91E22" : "transparent", border: !manualEntry ? "none" : "1px solid #666C75", padding: "5px 12px", cursor: "pointer" }}>
               Existing Dealer
             </button>
-            <button onClick={() => setManualEntry(true)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: manualEntry ? "#fff" : "#555", background: manualEntry ? "#A91E22" : "transparent", border: manualEntry ? "none" : "1px solid #333", padding: "5px 12px", cursor: "pointer" }}>
+            <button onClick={() => setManualEntry(true)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: manualEntry ? "#fff" : "#8B919A", background: manualEntry ? "#A91E22" : "transparent", border: manualEntry ? "none" : "1px solid #666C75", padding: "5px 12px", cursor: "pointer" }}>
               One-Time / Manual
             </button>
           </div>
@@ -232,7 +231,7 @@ export default function NewOrderPage() {
         {!manualEntry ? (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <select
-              style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: selectedDealer ? "#fff" : "#555", padding: "10px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }}
+              style={{ width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: selectedDealer ? "#fff" : "#8B919A", padding: "10px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }}
               value={selectedDealer?.id || ""}
               onChange={e => {
                 const dealer = dealers.find(d => d.id === e.target.value)
@@ -320,30 +319,30 @@ export default function NewOrderPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "16px", alignItems: "start" }}>
 
         {/* Catalog */}
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-          <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
-            <input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }} />
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32" }}>
+            <input placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }} />
           </div>
           <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.08)", overflowX: "auto" }}>
             {categories.map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 16px", cursor: "pointer", border: "none", background: "transparent", whiteSpace: "nowrap", color: activeCategory === cat ? "#fff" : "#555", borderBottom: activeCategory === cat ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
+              <button key={cat} onClick={() => setActiveCategory(cat)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 16px", cursor: "pointer", border: "none", background: "transparent", whiteSpace: "nowrap", color: activeCategory === cat ? "#fff" : "#8B919A", borderBottom: activeCategory === cat ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
                 {CATEGORY_LABELS[cat] || cat.replace("_", " ")} ({displaySkus.filter(s => s.product?.category === cat).length})
               </button>
             ))}
           </div>
 
           {loading ? (
-            <div style={{ padding: "40px", textAlign: "center", color: "#444", fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>Loading catalog...</div>
+            <div style={{ padding: "40px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>Loading catalog...</div>
           ) : filteredSkus.length === 0 ? (
-            <div style={{ padding: "40px", textAlign: "center", color: "#444", fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>No products in this category</div>
+            <div style={{ padding: "40px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow', sans-serif", fontSize: "13px" }}>No products in this category</div>
           ) : (
             <div style={{ padding: "12px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px" }}>
               {filteredSkus.map(sku => {
                 const price = getPrice(sku)
                 const inOrder = orderItems.find(i => i.sku.id === sku.id)
                 return (
-                  <div key={sku.id} style={{ background: inOrder ? "rgba(169,30,34,0.05)" : "#1E2226", border: `0.5px solid ${inOrder ? "rgba(169,30,34,0.25)" : "rgba(255,255,255,0.06)"}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                    <div style={{ position: "relative", height: "120px", background: "#13161A", flexShrink: 0 }}>
+                  <div key={sku.id} style={{ background: inOrder ? "rgba(169,30,34,0.05)" : "#2B3038", border: `0.5px solid ${inOrder ? "rgba(169,30,34,0.25)" : "rgba(255,255,255,0.06)"}`, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+                    <div style={{ position: "relative", height: "120px", background: "#23282E", flexShrink: 0 }}>
                       {sku.image_url ? (
                         <>
                           <img src={sku.image_url} alt={sku.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -353,8 +352,8 @@ export default function NewOrderPage() {
                         </>
                       ) : (
                         <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "6px" }}>
-                          <Image size={24} color="#2A2A2A" />
-                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#2A2A2A" }}>No Photo</span>
+                          <Image size={24} color="#3A3F47" />
+                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#3A3F47" }}>No Photo</span>
                         </div>
                       )}
                       {inOrder && (
@@ -365,7 +364,7 @@ export default function NewOrderPage() {
                     </div>
                     <div style={{ padding: "8px 10px", flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                       <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, color: "#A91E22", margin: 0, letterSpacing: "0.04em" }}>{sku.sku_code}</p>
-                      <p style={{ fontSize: "11px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: 0, lineHeight: "1.3" }}>{sku.name}</p>
+                      <p style={{ fontSize: "11px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0, lineHeight: "1.3" }}>{sku.name}</p>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "6px" }}>
                         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff", margin: 0 }}>${price.toFixed(2)}</p>
                         <button onClick={() => addToOrder(sku)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
@@ -381,15 +380,15 @@ export default function NewOrderPage() {
         </div>
 
         {/* Order sheet */}
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", position: "sticky", top: "20px" }}>
-          <div style={{ padding: "14px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", gap: "8px" }}>
-            <ShoppingCart size={14} color="#666" />
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>Order Sheet</span>
-            <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#444" }}>{orderItems.length} item{orderItems.length !== 1 ? "s" : ""}</span>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", position: "sticky", top: "20px" }}>
+          <div style={{ padding: "14px 18px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", alignItems: "center", gap: "8px" }}>
+            <ShoppingCart size={14} color="#9BA0A8" />
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9BA0A8" }}>Order Sheet</span>
+            <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", color: "#787E87" }}>{orderItems.length} item{orderItems.length !== 1 ? "s" : ""}</span>
           </div>
 
           {orderItems.length === 0 ? (
-            <div style={{ padding: "40px 20px", textAlign: "center", fontSize: "13px", color: "#444", fontFamily: "'Barlow', sans-serif" }}>
+            <div style={{ padding: "40px 20px", textAlign: "center", fontSize: "13px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>
               No items yet.<br />Select products from the catalog.
             </div>
           ) : (
@@ -400,21 +399,21 @@ export default function NewOrderPage() {
                     {item.sku.image_url ? (
                       <img src={item.sku.image_url} alt={item.sku.name} style={{ width: "36px", height: "36px", objectFit: "cover", flexShrink: 0 }} />
                     ) : (
-                      <div style={{ width: "36px", height: "36px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Image size={12} color="#333" />
+                      <div style={{ width: "36px", height: "36px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Image size={12} color="#666C75" />
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, color: "#A91E22", margin: 0 }}>{item.sku.sku_code}</p>
-                      <p style={{ fontSize: "11px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sku.name}</p>
+                      <p style={{ fontSize: "11px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sku.name}</p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
-                      <button onClick={() => updateQty(item.id, item.quantity - 1)} style={{ width: "20px", height: "20px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.12)", color: "#888", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+                      <button onClick={() => updateQty(item.id, item.quantity - 1)} style={{ width: "20px", height: "20px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.12)", color: "#B5BAC2", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", width: "22px", textAlign: "center" }}>{item.quantity}</span>
-                      <button onClick={() => updateQty(item.id, item.quantity + 1)} style={{ width: "20px", height: "20px", background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.12)", color: "#888", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                      <button onClick={() => updateQty(item.id, item.quantity + 1)} style={{ width: "20px", height: "20px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.12)", color: "#B5BAC2", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                     </div>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", margin: 0, flexShrink: 0 }}>${(item.unit_price * item.quantity).toFixed(2)}</p>
-                    <button onClick={() => setOrderItems(prev => prev.filter(i => i.id !== item.id))} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+                    <button onClick={() => setOrderItems(prev => prev.filter(i => i.id !== item.id))} style={{ background: "none", border: "none", color: "#666C75", cursor: "pointer", padding: 0, flexShrink: 0 }}>
                       <X size={13} />
                     </button>
                   </div>
@@ -422,24 +421,24 @@ export default function NewOrderPage() {
               </div>
               <div style={{ padding: "14px 16px", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
                 {(manualEntry ? manualName : selectedDealer) && (
-                  <div style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.06)", padding: "8px 12px", marginBottom: "10px" }}>
-                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#555", margin: "0 0 2px" }}>Order for</p>
-                    <p style={{ fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: "0 0 2px" }}>
+                  <div style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.06)", padding: "8px 12px", marginBottom: "10px" }}>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#8B919A", margin: "0 0 2px" }}>Order for</p>
+                    <p style={{ fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: "0 0 2px" }}>
                       {manualEntry ? `${manualName}${manualCompany ? ` — ${manualCompany}` : ""}` : selectedDealer?.company || selectedDealer?.name}
                     </p>
                     {manualEntry && manualPO && <p style={{ fontSize: "11px", color: "#6A9CC8", fontFamily: "'Barlow Condensed', sans-serif", margin: "0 0 2px", fontWeight: 700, letterSpacing: "0.04em" }}>PO: {manualPO}</p>}
-                    {manualEntry && manualAddress1 && <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{manualCity}, {manualState} · {manualAddressType}</p>}
+                    {manualEntry && manualAddress1 && <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{manualCity}, {manualState} · {manualAddressType}</p>}
                   </div>
                 )}
-                <textarea placeholder="Order notes..." value={notes} onChange={e => setNotes(e.target.value)} style={{ width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", resize: "none", minHeight: "50px", boxSizing: "border-box" as const, marginBottom: "12px" }} />
+                <textarea placeholder="Order notes..." value={notes} onChange={e => setNotes(e.target.value)} style={{ width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", resize: "none", minHeight: "50px", boxSizing: "border-box" as const, marginBottom: "12px" }} />
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#666" }}>Order Total</span>
+                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#9BA0A8" }}>Order Total</span>
                   <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, color: "#fff" }}>${getTotal().toFixed(2)}</span>
                 </div>
-                <button onClick={handleSubmit} disabled={submitting || (manualEntry && !manualName)} style={{ width: "100%", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: submitting || (manualEntry && !manualName) ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: submitting ? "not-allowed" : "pointer" }}>
+                <button onClick={handleSubmit} disabled={submitting || (manualEntry && !manualName)} style={{ width: "100%", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: submitting || (manualEntry && !manualName) ? "#666C75" : "#A91E22", border: "none", padding: "13px", cursor: submitting ? "not-allowed" : "pointer" }}>
                   {submitting ? "Creating..." : "Create Order →"}
                 </button>
-                <p style={{ fontSize: "10px", color: "#444", textAlign: "center", marginTop: "8px", fontFamily: "'Barlow', sans-serif" }}>Admin orders are auto-approved</p>
+                <p style={{ fontSize: "10px", color: "#787E87", textAlign: "center", marginTop: "8px", fontFamily: "'Barlow', sans-serif" }}>Order will go to Pending Review for approval</p>
               </div>
             </>
           )}
@@ -459,7 +458,7 @@ export default function NewOrderPage() {
                 <button onClick={() => { addToOrder(lightboxSku); setLightboxSku(null) }} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "9px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Plus size={13} /> Add to Order
                 </button>
-                <button onClick={() => setLightboxSku(null)} style={{ background: "none", border: "none", color: "#666", cursor: "pointer" }}><X size={24} /></button>
+                <button onClick={() => setLightboxSku(null)} style={{ background: "none", border: "none", color: "#9BA0A8", cursor: "pointer" }}><X size={24} /></button>
               </div>
             </div>
             <img src={lightboxSku.image_url!} alt={lightboxSku.name} style={{ width: "100%", maxHeight: "60vh", objectFit: "contain", display: "block" }} />

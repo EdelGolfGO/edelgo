@@ -34,7 +34,7 @@ const TYPE_COLORS: Record<string, { color: string; bg: string }> = {
   wholesale:     { color: "#6A9CC8", bg: "rgba(106,156,200,0.1)" },
   distributor:   { color: "#C4A93A", bg: "rgba(196,169,58,0.1)" },
   fitter:        { color: "#7AAB6A", bg: "rgba(122,171,106,0.1)" },
-  retail:        { color: "#888",    bg: "rgba(136,136,136,0.1)" },
+  retail:        { color: "#B5BAC2",    bg: "rgba(136,136,136,0.1)" },
   international: { color: "#A91E22", bg: "rgba(169,30,34,0.1)" },
 }
 
@@ -131,7 +131,7 @@ export default function DealersPage() {
   })
 
   const inputStyle = {
-    width: "100%", background: "#13161A", border: "0.5px solid rgba(255,255,255,0.12)",
+    width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)",
     color: "#fff", padding: "9px 12px", fontSize: "13px",
     fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const,
   }
@@ -139,7 +139,7 @@ export default function DealersPage() {
   const labelStyle = {
     display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif",
     fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em",
-    textTransform: "uppercase" as const, color: "#666", marginBottom: "6px",
+    textTransform: "uppercase" as const, color: "#9BA0A8", marginBottom: "6px",
   }
 
   const selectStyle = { ...inputStyle, cursor: "pointer" }
@@ -152,10 +152,10 @@ export default function DealersPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Accounts</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Dealers</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>{dealers.length} dealers in your network</p>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>{dealers.length} dealers in your network</p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <input placeholder="Search dealers..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: "#1A1E22", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "200px" }} />
+          <input placeholder="Search dealers..." value={search} onChange={e => setSearch(e.target.value)} style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 14px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", width: "200px" }} />
           <button onClick={openNew} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "8px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
             <Plus size={14} /> Add Dealer
           </button>
@@ -168,9 +168,9 @@ export default function DealersPage() {
           const count = dealers.filter(d => d.dealer_type === type).length
           const tc = TYPE_COLORS[type]
           return (
-            <div key={type} onClick={() => setFilter(filter === type ? "all" : type)} style={{ background: "#22262B", border: `0.5px solid ${filter === type ? tc.color : "rgba(255,255,255,0.10)"}`, borderTop: `2px solid ${filter === type ? tc.color : "#2A2A2A"}`, padding: "14px 16px", cursor: "pointer" }}>
-              <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666", marginBottom: "6px" }}>{type}</p>
-              <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: count > 0 ? tc.color : "#333", margin: 0 }}>{count}</p>
+            <div key={type} onClick={() => setFilter(filter === type ? "all" : type)} style={{ background: "#2E343C", border: `0.5px solid ${filter === type ? tc.color : "rgba(255,255,255,0.10)"}`, borderTop: `2px solid ${filter === type ? tc.color : "#3A3F47"}`, padding: "14px 16px", cursor: "pointer" }}>
+              <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9BA0A8", marginBottom: "6px" }}>{type}</p>
+              <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: count > 0 ? tc.color : "#666C75", margin: 0 }}>{count}</p>
             </div>
           )
         })}
@@ -178,10 +178,10 @@ export default function DealersPage() {
 
       {/* Dealer list */}
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading dealers...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", letterSpacing: "0.1em", textTransform: "uppercase" }}>Loading dealers...</div>
       ) : filtered.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", margin: "0 0 16px" }}>No Dealers Yet</p>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#787E87", margin: "0 0 16px" }}>No Dealers Yet</p>
           <button onClick={openNew} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "8px 18px", cursor: "pointer" }}>+ Add First Dealer</button>
         </div>
       ) : (
@@ -190,29 +190,29 @@ export default function DealersPage() {
             const tc = TYPE_COLORS[dealer.dealer_type] || TYPE_COLORS.wholesale
             const isExpanded = expanded === dealer.id
             return (
-              <div key={dealer.id} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderLeft: `3px solid ${tc.color}` }}>
+              <div key={dealer.id} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderLeft: `3px solid ${tc.color}` }}>
                 <div onClick={() => setExpanded(isExpanded ? null : dealer.id)} style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}>
                   <div style={{ flex: "0 0 200px" }}>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff", margin: 0 }}>{dealer.name}</p>
-                    {dealer.company && <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{dealer.company}</p>}
+                    {dealer.company && <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{dealer.company}</p>}
                   </div>
                   <div style={{ flex: "0 0 140px" }}>
                     <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: tc.color, background: tc.bg, padding: "3px 10px" }}>{dealer.dealer_type}</span>
                   </div>
                   <div style={{ flex: 1, display: "flex", gap: "20px" }}>
-                    {dealer.email && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Mail size={11} color="#444" /><span style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif" }}>{dealer.email}</span></div>}
-                    {dealer.phone && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Phone size={11} color="#444" /><span style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif" }}>{dealer.phone}</span></div>}
-                    {dealer.city && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><MapPin size={11} color="#444" /><span style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif" }}>{dealer.city}{dealer.state ? `, ${dealer.state}` : ""}</span></div>}
+                    {dealer.email && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Mail size={11} color="#787E87" /><span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{dealer.email}</span></div>}
+                    {dealer.phone && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Phone size={11} color="#787E87" /><span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{dealer.phone}</span></div>}
+                    {dealer.city && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><MapPin size={11} color="#787E87" /><span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{dealer.city}{dealer.state ? `, ${dealer.state}` : ""}</span></div>}
                   </div>
                   <div style={{ flex: "0 0 120px", textAlign: "right" }}>
-                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#555", margin: "0 0 2px" }}>{dealer.payment_terms?.replace("_", "/")}</p>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B919A", margin: "0 0 2px" }}>{dealer.payment_terms?.replace("_", "/")}</p>
                     {dealer.discount_percent > 0 && <p style={{ fontSize: "11px", color: "#5A9E5A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{dealer.discount_percent}% discount</p>}
                   </div>
-                  <ChevronDown size={16} color="#444" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0 }} />
+                  <ChevronDown size={16} color="#787E87" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0 }} />
                 </div>
 
                 {isExpanded && (
-                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#1E2226" }}>
+                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#2B3038" }}>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "16px" }}>
                       {[
                         { label: "Payment Terms", value: dealer.payment_terms?.replace("_", "/") },
@@ -221,20 +221,20 @@ export default function DealersPage() {
                         { label: "Status", value: dealer.status },
                       ].map(item => (
                         <div key={item.label}>
-                          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#444", margin: "0 0 4px" }}>{item.label}</p>
-                          <p style={{ fontSize: "13px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{item.value || "—"}</p>
+                          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>{item.label}</p>
+                          <p style={{ fontSize: "13px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{item.value || "—"}</p>
                         </div>
                       ))}
                     </div>
                     {dealer.address_line1 && (
                       <div style={{ marginBottom: "12px" }}>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#444", margin: "0 0 4px" }}>Address</p>
-                        <p style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{dealer.address_line1}{dealer.address_line2 ? `, ${dealer.address_line2}` : ""}, {dealer.city}, {dealer.state} {dealer.zip}</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>Address</p>
+                        <p style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{dealer.address_line1}{dealer.address_line2 ? `, ${dealer.address_line2}` : ""}, {dealer.city}, {dealer.state} {dealer.zip}</p>
                       </div>
                     )}
-                    {dealer.notes && <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", marginBottom: "16px", fontStyle: "italic" }}>Note: {dealer.notes}</p>}
+                    {dealer.notes && <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", marginBottom: "16px", fontStyle: "italic" }}>Note: {dealer.notes}</p>}
                     <div style={{ display: "flex", gap: "10px" }}>
-                      <button onClick={() => openEdit(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <button onClick={() => openEdit(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                         <Pencil size={12} /> Edit
                       </button>
                       <button onClick={() => setDeleteConfirm(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "1px solid rgba(169,30,34,0.3)", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
@@ -252,21 +252,21 @@ export default function DealersPage() {
       {/* Add/Edit Modal */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={() => setModal(false)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", width: "100%", maxWidth: "680px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", width: "100%", maxWidth: "680px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#161A1D", position: "sticky", top: 0, zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#20242A", position: "sticky", top: 0, zIndex: 10 }}>
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", margin: "0 0 4px" }}>Accounts</p>
                 <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>{editId ? "Edit Dealer" : "New Dealer"}</h2>
               </div>
-              <button onClick={() => setModal(false)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><X size={20} /></button>
+              <button onClick={() => setModal(false)} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer" }}><X size={20} /></button>
             </div>
 
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
 
               {/* Basic Info */}
               <div>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Basic Information</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Basic Information</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={labelStyle}>Contact Name *</label>
@@ -289,7 +289,7 @@ export default function DealersPage() {
 
               {/* Type + Status */}
               <div>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Account Type</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Account Type</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={labelStyle}>Dealer Type</label>
@@ -308,7 +308,7 @@ export default function DealersPage() {
 
               {/* Address */}
               <div>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Address</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Address</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div>
                     <label style={labelStyle}>Address Line 1</label>
@@ -341,7 +341,7 @@ export default function DealersPage() {
 
               {/* Payment Terms */}
               <div>
-                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Payment Terms</p>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Payment Terms</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={labelStyle}>Terms</label>
@@ -360,7 +360,7 @@ export default function DealersPage() {
                 </div>
                 <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
                   <input type="checkbox" id="tax_exempt" checked={form.tax_exempt} onChange={e => setForm((f: any) => ({ ...f, tax_exempt: e.target.checked }))} style={{ cursor: "pointer" }} />
-                  <label htmlFor="tax_exempt" style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Tax Exempt</label>
+                  <label htmlFor="tax_exempt" style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", cursor: "pointer" }}>Tax Exempt</label>
                   {form.tax_exempt && (
                     <input style={{ ...inputStyle, width: "200px", marginLeft: "12px" }} placeholder="Tax ID" value={form.tax_id} onChange={e => setForm((f: any) => ({ ...f, tax_id: e.target.value }))} />
                   )}
@@ -373,7 +373,7 @@ export default function DealersPage() {
                 <textarea style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} placeholder="Any additional notes..." value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} />
               </div>
 
-              <button onClick={handleSave} disabled={saving || !form.name} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving || !form.name ? "#333" : "#A91E22", border: "none", padding: "13px", cursor: saving || !form.name ? "not-allowed" : "pointer" }}>
+              <button onClick={handleSave} disabled={saving || !form.name} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fff", background: saving || !form.name ? "#666C75" : "#A91E22", border: "none", padding: "13px", cursor: saving || !form.name ? "not-allowed" : "pointer" }}>
                 {saving ? "Saving..." : editId ? "Update Dealer →" : "Add Dealer →"}
               </button>
             </div>
@@ -384,12 +384,12 @@ export default function DealersPage() {
       {/* Delete confirm */}
       {deleteConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300 }} onClick={() => setDeleteConfirm(null)}>
-          <div style={{ background: "#1E2226", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", padding: "32px", width: "380px" }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", padding: "32px", width: "380px" }} onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: "0 0 8px" }}>Delete Dealer?</h2>
-            <p style={{ fontSize: "13px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: "0 0 6px" }}>Are you sure you want to delete <strong style={{ color: "#fff" }}>{deleteConfirm.name}</strong>?</p>
+            <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: "0 0 6px" }}>Are you sure you want to delete <strong style={{ color: "#fff" }}>{deleteConfirm.name}</strong>?</p>
             <p style={{ fontSize: "12px", color: "#A91E22", fontFamily: "'Barlow', sans-serif", margin: "0 0 24px" }}>This cannot be undone.</p>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888", background: "transparent", border: "1px solid #333", padding: "10px", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "10px", cursor: "pointer" }}>Cancel</button>
               <button onClick={() => handleDelete(deleteConfirm)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "10px", cursor: "pointer" }}>Delete</button>
             </div>
           </div>

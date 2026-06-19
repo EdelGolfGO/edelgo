@@ -258,9 +258,9 @@ export default function CalendarPage() {
     fontFamily: "'Barlow Condensed', sans-serif" as const,
     fontSize: "11px", fontWeight: 700,
     letterSpacing: "0.1em", textTransform: "uppercase" as const,
-    color: active ? "#fff" : "#555",
+    color: active ? "#fff" : "#8B919A",
     background: active ? "#A91E22" : "transparent",
-    border: active ? "none" : "1px solid #333",
+    border: active ? "none" : "1px solid #666C75",
     padding: "7px 16px", cursor: "pointer",
   })
 
@@ -272,7 +272,7 @@ export default function CalendarPage() {
         <div>
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Operations</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Calendar</h1>
-          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", textTransform: "none", letterSpacing: "normal", fontWeight: 400 }}>
+          <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", textTransform: "none", letterSpacing: "normal", fontWeight: 400 }}>
             All payment deadlines and ship dates from your POs and invoices
             {loading ? " — loading..." : ` — ${events.length} events`}
           </p>
@@ -308,7 +308,7 @@ export default function CalendarPage() {
         ].map(item => (
           <div key={item.label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <div style={{ width: "10px", height: "10px", background: item.color }} />
-            <span style={{ fontSize: "11px", color: "#666", fontFamily: "'Barlow', sans-serif" }}>{item.label}</span>
+            <span style={{ fontSize: "11px", color: "#9BA0A8", fontFamily: "'Barlow', sans-serif" }}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -318,18 +318,18 @@ export default function CalendarPage() {
         {/* Calendar / List */}
         <div>
           {view === "calendar" ? (
-            <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+            <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
               {/* Month nav */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
-                <button onClick={prevMonth} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", padding: "4px" }}><ChevronLeft size={18} /></button>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32" }}>
+                <button onClick={prevMonth} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer", padding: "4px" }}><ChevronLeft size={18} /></button>
                 <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#fff", margin: 0 }}>{MONTHS[currentMonth]} {currentYear}</h2>
-                <button onClick={nextMonth} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", padding: "4px" }}><ChevronRight size={18} /></button>
+                <button onClick={nextMonth} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer", padding: "4px" }}><ChevronRight size={18} /></button>
               </div>
 
               {/* Day headers */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
                 {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
-                  <div key={d} style={{ padding: "8px 0", textAlign: "center", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#333", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{d}</div>
+                  <div key={d} style={{ padding: "8px 0", textAlign: "center", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#666C75", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{d}</div>
                 ))}
               </div>
 
@@ -360,7 +360,7 @@ export default function CalendarPage() {
                       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent" }}
                     >
                       <div style={{ width: "24px", height: "24px", background: isToday ? "#A91E22" : hasOverdue && !isToday ? "rgba(169,30,34,0.2)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "4px" }}>
-                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: isToday ? 700 : 400, color: isToday ? "#fff" : hasOverdue ? "#A91E22" : "#666" }}>{day}</span>
+                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: isToday ? 700 : 400, color: isToday ? "#fff" : hasOverdue ? "#A91E22" : "#9BA0A8" }}>{day}</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                         {dayEvents.slice(0, 2).map(event => {
@@ -372,7 +372,7 @@ export default function CalendarPage() {
                             </div>
                           )
                         })}
-                        {dayEvents.length > 2 && <div style={{ fontSize: "9px", color: "#444", fontFamily: "'Barlow', sans-serif", paddingLeft: "4px" }}>+{dayEvents.length - 2} more</div>}
+                        {dayEvents.length > 2 && <div style={{ fontSize: "9px", color: "#787E87", fontFamily: "'Barlow', sans-serif", paddingLeft: "4px" }}>+{dayEvents.length - 2} more</div>}
                       </div>
                     </div>
                   )
@@ -381,18 +381,18 @@ export default function CalendarPage() {
             </div>
           ) : (
             // List view
-            <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-              <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#666" }}>
+            <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#9BA0A8" }}>
                   {MONTHS[currentMonth]} {currentYear} — {monthEvents.length} Events
                 </span>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={prevMonth} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><ChevronLeft size={16} /></button>
-                  <button onClick={nextMonth} style={{ background: "none", border: "none", color: "#555", cursor: "pointer" }}><ChevronRight size={16} /></button>
+                  <button onClick={prevMonth} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer" }}><ChevronLeft size={16} /></button>
+                  <button onClick={nextMonth} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer" }}><ChevronRight size={16} /></button>
                 </div>
               </div>
               {monthEvents.length === 0 ? (
-                <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#333", fontFamily: "'Barlow', sans-serif" }}>
+                <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#666C75", fontFamily: "'Barlow', sans-serif" }}>
                   {loading ? "Loading events..." : "No events this month"}
                 </div>
               ) : (
@@ -406,19 +406,19 @@ export default function CalendarPage() {
                     >
                       <div style={{ flex: "0 0 80px", textAlign: "center" }}>
                         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "22px", fontWeight: 700, color: "#fff", margin: 0, lineHeight: 1 }}>{d.getDate()}</p>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#444", margin: "2px 0 0" }}>{MONTHS[d.getMonth()].slice(0, 3)}</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#787E87", margin: "2px 0 0" }}>{MONTHS[d.getMonth()].slice(0, 3)}</p>
                       </div>
                       <div style={{ width: "3px", alignSelf: "stretch", background: event.status === "overdue" ? "#A91E22" : config.color, flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "#fff", margin: "0 0 2px" }}>{config.label}</p>
-                        <p style={{ fontSize: "12px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{event.label}</p>
+                        <p style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{event.label}</p>
                       </div>
                       {event.amount && (
                         <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: event.status === "overdue" ? "#A91E22" : config.color }}>
                           {formatMoney(event.amount)}
                         </span>
                       )}
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: event.status === "completed" ? "#5A9E5A" : event.status === "overdue" ? "#A91E22" : event.status === "due_soon" ? "#C4A93A" : "#666", background: event.status === "completed" ? "rgba(90,158,90,0.1)" : event.status === "overdue" ? "rgba(169,30,34,0.1)" : event.status === "due_soon" ? "rgba(196,169,58,0.1)" : "rgba(255,255,255,0.05)", padding: "3px 8px" }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: event.status === "completed" ? "#5A9E5A" : event.status === "overdue" ? "#A91E22" : event.status === "due_soon" ? "#C4A93A" : "#9BA0A8", background: event.status === "completed" ? "rgba(90,158,90,0.1)" : event.status === "overdue" ? "rgba(169,30,34,0.1)" : event.status === "due_soon" ? "rgba(196,169,58,0.1)" : "rgba(255,255,255,0.05)", padding: "3px 8px" }}>
                         {event.status === "due_soon" ? "Due Soon" : event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                       </span>
                     </div>
@@ -434,9 +434,9 @@ export default function CalendarPage() {
 
           {/* Selected day */}
           {selectedDay && selectedEvents.length > 0 && (
-            <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-              <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#888" }}>
+            <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32" }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#B5BAC2" }}>
                   {MONTHS[currentMonth]} {selectedDay}
                 </span>
               </div>
@@ -448,9 +448,9 @@ export default function CalendarPage() {
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: event.status === "overdue" ? "#A91E22" : config.color, margin: "0 0 2px" }}>{config.label}</p>
-                    <p style={{ fontSize: "12px", color: "#CCC", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px" }}>{event.label}</p>
+                    <p style={{ fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: "0 0 4px" }}>{event.label}</p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif" }}>{event.reference}</span>
+                      <span style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif" }}>{event.reference}</span>
                       {event.amount && <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: event.status === "overdue" ? "#A91E22" : config.color }}>{formatMoney(event.amount)}</span>}
                     </div>
                   </div>
@@ -461,8 +461,8 @@ export default function CalendarPage() {
 
           {/* Overdue */}
           {overdueAll.length > 0 && (
-            <div style={{ background: "#22262B", border: "0.5px solid rgba(169,30,34,0.25)", borderTop: "2px solid #A91E22" }}>
-              <div style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.06)", background: "#1A1E22" }}>
+            <div style={{ background: "#2E343C", border: "0.5px solid rgba(169,30,34,0.25)", borderTop: "2px solid #A91E22" }}>
+              <div style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.06)", background: "#262B32" }}>
                 <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#A91E22" }}>⚠ Overdue ({overdueAll.length})</span>
               </div>
               {overdueAll.slice(0, 5).map(event => {
@@ -478,7 +478,7 @@ export default function CalendarPage() {
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#A91E22", margin: "0 0 1px" }}>{EVENT_CONFIG[event.type].label}</p>
-                      <p style={{ fontSize: "11px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{event.reference}</p>
+                      <p style={{ fontSize: "11px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{event.reference}</p>
                     </div>
                     {event.amount && <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#A91E22" }}>{formatMoney(event.amount)}</span>}
                   </div>
@@ -488,16 +488,16 @@ export default function CalendarPage() {
           )}
 
           {/* Upcoming 30 days */}
-          <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
-            <div style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#1A1E22" }}>
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#888" }}>
+          <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+            <div style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32" }}>
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#B5BAC2" }}>
                 Next 30 Days {upcomingAll.length > 0 ? `(${upcomingAll.length})` : ""}
               </span>
             </div>
             {loading ? (
-              <div style={{ padding: "20px 14px", fontSize: "12px", color: "#333", fontFamily: "'Barlow', sans-serif" }}>Loading...</div>
+              <div style={{ padding: "20px 14px", fontSize: "12px", color: "#666C75", fontFamily: "'Barlow', sans-serif" }}>Loading...</div>
             ) : upcomingAll.length === 0 ? (
-              <div style={{ padding: "20px 14px", fontSize: "12px", color: "#333", fontFamily: "'Barlow', sans-serif" }}>Nothing due in the next 30 days</div>
+              <div style={{ padding: "20px 14px", fontSize: "12px", color: "#666C75", fontFamily: "'Barlow', sans-serif" }}>Nothing due in the next 30 days</div>
             ) : (
               upcomingAll.map(event => {
                 const config = EVENT_CONFIG[event.type]
@@ -516,13 +516,13 @@ export default function CalendarPage() {
                       <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: config.color, margin: "0 0 1px" }}>
                         {config.icon} {config.label}
                       </p>
-                      <p style={{ fontSize: "11px", color: "#888", fontFamily: "'Barlow', sans-serif", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <p style={{ fontSize: "11px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {event.reference}
                       </p>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
                       {event.amount && <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: config.color, margin: "0 0 2px" }}>{formatMoney(event.amount)}</p>}
-                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, color: daysLeft <= 7 ? "#A91E22" : daysLeft <= 14 ? "#C4A93A" : "#555", margin: 0 }}>
+                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, color: daysLeft <= 7 ? "#A91E22" : daysLeft <= 14 ? "#C4A93A" : "#8B919A", margin: 0 }}>
                         {daysLeft === 0 ? "Today" : `${daysLeft}d`}
                       </p>
                     </div>

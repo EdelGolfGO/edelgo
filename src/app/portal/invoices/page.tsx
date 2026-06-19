@@ -57,7 +57,7 @@ export default function PortalInvoicesPage() {
       <div style={{ paddingBottom: "16px", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Dealer Portal</p>
         <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>My Invoices</h1>
-        <p style={{ fontSize: "12px", color: "#888", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>{invoices.length} invoices</p>
+        <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>{invoices.length} invoices</p>
       </div>
 
       {/* Stats */}
@@ -67,20 +67,20 @@ export default function PortalInvoicesPage() {
           { label: "Outstanding Balance", value: `$${Math.round(totalOutstanding).toLocaleString()}`, color: totalOutstanding > 0 ? "#C4A93A" : "#5A9E5A" },
           { label: "Paid in Full", value: invoices.filter(i => i.status === "paid").length.toString(), color: "#5A9E5A" },
         ].map(stat => (
-          <div key={stat.label} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #2A2A2A", padding: "18px 20px" }}>
-            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#888", marginBottom: "8px" }}>{stat.label}</p>
+          <div key={stat.label} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #3A3F47", padding: "18px 20px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>{stat.label}</p>
             <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: stat.color, lineHeight: 1, margin: 0 }}>{stat.value}</p>
           </div>
         ))}
       </div>
 
       {loading ? (
-        <div style={{ padding: "60px", textAlign: "center", color: "#444", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.1em" }}>Loading invoices...</div>
+        <div style={{ padding: "60px", textAlign: "center", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.1em" }}>Loading invoices...</div>
       ) : invoices.length === 0 ? (
-        <div style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
-          <FileText size={32} color="#333" style={{ margin: "0 auto 12px" }} />
-          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#444", margin: "0 0 8px" }}>No invoices yet</p>
-          <p style={{ fontSize: "13px", color: "#333", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Invoices will appear here once your orders are processed.</p>
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", padding: "60px 20px", textAlign: "center" }}>
+          <FileText size={32} color="#666C75" style={{ margin: "0 auto 12px" }} />
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#787E87", margin: "0 0 8px" }}>No invoices yet</p>
+          <p style={{ fontSize: "13px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Invoices will appear here once your orders are processed.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -89,36 +89,36 @@ export default function PortalInvoicesPage() {
             const statusInfo = STATUS_COLORS[invoice.status] || STATUS_COLORS.pending
 
             return (
-              <div key={invoice.id} style={{ background: "#22262B", border: "0.5px solid rgba(255,255,255,0.10)" }}>
+              <div key={invoice.id} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
                 <div onClick={() => setExpanded(isExpanded ? null : invoice.id)} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#A91E22", margin: 0, letterSpacing: "0.05em" }}>{invoice.invoice_number}</p>
-                    <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>Issued {formatDate(invoice.invoice_date)}</p>
+                    <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>Issued {formatDate(invoice.invoice_date)}</p>
                   </div>
                   <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: statusInfo.color, background: statusInfo.bg, padding: "3px 10px" }}>{statusInfo.label}</span>
                   <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, color: "#fff" }}>${invoice.total_amount?.toLocaleString()}</span>
-                  <ChevronDown size={16} color="#444" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0 }} />
+                  <ChevronDown size={16} color="#787E87" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s", flexShrink: 0 }} />
                 </div>
 
                 {isExpanded && (
-                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#1E2226" }}>
-                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#555", marginBottom: "12px" }}>Payment Schedule</p>
+                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#2B3038" }}>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Payment Schedule</p>
                     <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
                       {[
                         { label: "50% Deposit", amount: invoice.total_amount * 0.5, due: addDays(invoice.invoice_date, 14), paid: !!invoice.deposit_paid_date, paidDate: invoice.deposit_paid_date },
                         { label: "50% Final", amount: invoice.total_amount * 0.5, due: invoice.ship_date ? addDays(invoice.ship_date, 45) : "Due 45 days after ship", paid: !!invoice.final_payment_paid_date, paidDate: invoice.final_payment_paid_date },
                       ].map(p => (
-                        <div key={p.label} style={{ background: "#22262B", border: `0.5px solid ${p.paid ? "rgba(90,158,90,0.3)" : "rgba(196,169,58,0.2)"}`, padding: "12px 16px", flex: 1 }}>
+                        <div key={p.label} style={{ background: "#2E343C", border: `0.5px solid ${p.paid ? "rgba(90,158,90,0.3)" : "rgba(196,169,58,0.2)"}`, padding: "12px 16px", flex: 1 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: p.paid ? "#5A9E5A" : "#C4A93A" }}>{p.label}</span>
                             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: p.paid ? "#5A9E5A" : "#C4A93A", background: p.paid ? "rgba(90,158,90,0.1)" : "rgba(196,169,58,0.1)", padding: "2px 6px" }}>{p.paid ? "Paid" : "Pending"}</span>
                           </div>
                           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, color: "#fff", margin: "4px 0" }}>${p.amount.toLocaleString()}</p>
-                          <p style={{ fontSize: "11px", color: "#555", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{p.paid ? `Paid ${formatDate(p.paidDate)}` : `Due ${p.due}`}</p>
+                          <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{p.paid ? `Paid ${formatDate(p.paidDate)}` : `Due ${p.due}`}</p>
                         </div>
                       ))}
                     </div>
-                    {invoice.notes && <p style={{ fontSize: "12px", color: "#555", fontFamily: "'Barlow', sans-serif", fontStyle: "italic" }}>Note: {invoice.notes}</p>}
+                    {invoice.notes && <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", fontStyle: "italic" }}>Note: {invoice.notes}</p>}
                   </div>
                 )}
               </div>
