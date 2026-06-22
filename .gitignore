@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 scripts/test-cin7.sh
+src_backup_*
