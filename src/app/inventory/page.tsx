@@ -19,7 +19,7 @@ type InventoryItem = {
     sku_code: string
     name: string
     unit_cost: number
-    is_component: boolean
+    sku_type: string
     product: { name: string; category: string }
   }
 }
@@ -30,6 +30,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   part: "#C4A93A",
   accessory: "#7AAB6A",
   apparel: "#B5BAC2",
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  built_product: "Built Product",
+  component: "Component",
+  consumable: "Consumable",
+}
+
+const TYPE_COLORS: Record<string, { color: string; bg: string }> = {
+  built_product: { color: "#E87878", bg: "rgba(169,30,34,0.15)" },
+  component: { color: "#C4A93A", bg: "rgba(196,169,58,0.1)" },
+  consumable: { color: "#6A9CC8", bg: "rgba(106,156,200,0.12)" },
 }
 
 export default function InventoryPage() {
@@ -50,7 +62,7 @@ export default function InventoryPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from("inventory")
-      .select("*, sku:skus(sku_code, name, unit_cost, is_component, product:products(name, category))")
+      .select("*, sku:skus(sku_code, name, unit_cost, sku_type, product:products(name, category))")
       .order("qty_available", { ascending: true })
     if (data) setInventory(data as any)
     setLoading(false)
@@ -66,6 +78,7 @@ export default function InventoryPage() {
   function openEdit(item: InventoryItem) {
     setEditForm({
       qty_on_hand: item.qty_on_hand?.toString() ?? "0",
+      qty_reserved: item.qty_reserved?.toString() ?? "0",
       min_stock: item.min_stock?.toString() ?? "5",
       max_stock: item.max_stock?.toString() ?? "50",
       reorder_qty: item.reorder_qty?.toString() ?? "20",
@@ -79,17 +92,30 @@ export default function InventoryPage() {
     const supabase = createClient()
 
     const qtyOnHand = parseInt(editForm.qty_on_hand) || 0
+    const qtyReserved = parseInt(editForm.qty_reserved) || 0
     const minStock = parseInt(editForm.min_stock) || 0
     const maxStock = parseInt(editForm.max_stock) || 0
     const reorderQty = parseInt(editForm.reorder_qty) || 0
 
     await supabase.from("inventory").update({
       qty_on_hand: qtyOnHand,
+      qty_reserved: qtyReserved,
       min_stock: minStock,
       max_stock: maxStock,
       reorder_qty: reorderQty,
       updated_at: new Date().toISOString(),
     }).eq("id", editModal.id)
+
+    // Push the updated quantity to Shopify in the background. EdelFit's database
+    // is the source of truth regardless of outcome here — we never block the save
+    // or surface a failure to the user if Shopify's push has an issue. Errors are
+    // only logged to the console for now; a future pass can add a dedicated
+    // alerts/log entry similar to the auto-restock alert pattern.
+    fetch("/api/shopify/push-inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sku_id: editModal.sku_id }),
+    }).catch(err => console.error("Shopify inventory push failed:", err))
 
     setSaving(false)
     setEditModal(null)
@@ -200,6 +226,8 @@ export default function InventoryPage() {
                 const statusLabel = status === "critical" ? "Critical" : status === "low" ? "Low" : status === "healthy" ? "Healthy" : "OK"
                 const pct = item.max_stock > 0 ? Math.min(100, (item.qty_available / item.max_stock) * 100) : 0
                 const catColor = CATEGORY_COLORS[item.sku?.product?.category || ""] || "#B5BAC2"
+                const typeKey = item.sku?.sku_type || "built_product"
+                const typeStyle = TYPE_COLORS[typeKey] || TYPE_COLORS.built_product
 
                 return (
                   <tr key={item.id} style={{ cursor: "default" }}
@@ -209,8 +237,8 @@ export default function InventoryPage() {
                     <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)", letterSpacing: "0.04em" }}>{item.sku?.sku_code}</td>
                     <td style={{ padding: "10px 14px", fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku?.name}</td>
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "2px 7px", background: item.sku?.is_component ? "rgba(196,169,58,0.1)" : "rgba(169,30,34,0.15)", color: item.sku?.is_component ? "#C4A93A" : "#E87878" }}>
-                        {item.sku?.is_component ? "Component" : "Built Product"}
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "2px 7px", background: typeStyle.bg, color: typeStyle.color }}>
+                        {TYPE_LABELS[typeKey] || "Built Product"}
                       </span>
                     </td>
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
@@ -268,14 +296,20 @@ export default function InventoryPage() {
             </div>
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
-              {/* On Hand — primary edit field */}
-              <div>
-                <label style={labelStyle}>Qty On Hand</label>
-                <input type="number" style={{ ...inputStyle, fontSize: "20px", fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif", padding: "12px", borderColor: "rgba(106,156,200,0.4)" }} value={editForm.qty_on_hand} onChange={e => setEditForm((v: any) => ({ ...v, qty_on_hand: e.target.value }))} min={0} />
-                <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "5px 0 0" }}>
-                  Current physical count in stock. Updates the Available qty immediately.
-                </p>
+              {/* On Hand + Reserved — primary edit fields */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={labelStyle}>Qty On Hand</label>
+                  <input type="number" style={{ ...inputStyle, fontSize: "20px", fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif", padding: "12px", borderColor: "rgba(106,156,200,0.4)" }} value={editForm.qty_on_hand} onChange={e => setEditForm((v: any) => ({ ...v, qty_on_hand: e.target.value }))} min={0} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Qty Reserved</label>
+                  <input type="number" style={{ ...inputStyle, fontSize: "20px", fontWeight: 700, fontFamily: "'Barlow Condensed', sans-serif", padding: "12px", borderColor: "rgba(196,169,58,0.4)" }} value={editForm.qty_reserved} onChange={e => setEditForm((v: any) => ({ ...v, qty_reserved: e.target.value }))} min={0} />
+                </div>
               </div>
+              <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "-8px 0 0" }}>
+                On Hand is your physical count. Reserved is stock set aside (e.g. for a pending order) and subtracted from Available.
+              </p>
 
               <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", paddingTop: "16px" }}>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#787E87", margin: "0 0 12px" }}>Stock Thresholds</p>

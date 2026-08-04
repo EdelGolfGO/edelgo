@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, ShoppingCart } from "lucide-react"
+import { AlertTriangle, ShoppingCart, TrendingUp, Info } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 
 type InventoryItem = {
@@ -19,9 +19,14 @@ type InventoryItem = {
     sku_code: string
     name: string
     unit_cost: number
+    lead_time_days: number
     product: { name: string; category: string }
   }
 }
+
+type RunRateWindow = 30 | 60 | 90
+
+const DEFAULT_LEAD_TIME = 14 // fallback when a SKU has no lead_time_days set
 
 export default function ForecastPage() {
   const router = useRouter()
@@ -30,18 +35,111 @@ export default function ForecastPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"available_asc" | "available_desc" | "reorder_cost_desc" | "sku_asc" | "category">("available_asc")
+  const [runRateWindow, setRunRateWindow] = useState<RunRateWindow>(60)
+  const [runRates, setRunRates] = useState<Record<string, number>>({}) // sku_id -> units/day
+  const [runRatesLoading, setRunRatesLoading] = useState(true)
 
   useEffect(() => { loadInventory() }, [])
+  useEffect(() => { loadRunRates() }, [runRateWindow])
 
   async function loadInventory() {
     setLoading(true)
     const supabase = createClient()
     const { data } = await supabase
       .from("inventory")
-      .select("*, sku:skus(sku_code, name, unit_cost, product:products(name, category))")
+      .select("*, sku:skus(sku_code, name, unit_cost, lead_time_days, product:products(name, category))")
       .order("qty_available", { ascending: true })
     if (data) setInventory(data as any)
     setLoading(false)
+  }
+
+  // Run rate is consumption per day over a trailing window, computed the
+  // same way as Sales History's Component Usage tab: real component picks
+  // from shipped Work Orders, plus BoM decomposition of stock items sold to
+  // domestic-stock dealers, plus — the one addition beyond Sales History —
+  // direct sales quantity for stock SKUs that have no BoM at all (apparel,
+  // accessories), since there's nothing to decompose for those and their
+  // own sale IS the depletion event. Drop-ship dealer orders never touch
+  // domestic inventory, so they're excluded throughout, consistent with
+  // Ship & Backflush.
+  async function loadRunRates() {
+    setRunRatesLoading(true)
+    const supabase = createClient()
+    const windowStart = new Date()
+    windowStart.setDate(windowStart.getDate() - runRateWindow)
+    const windowStartStr = windowStart.toISOString().split("T")[0]
+
+    const [skusResult, ordersResult, workOrdersResult] = await Promise.all([
+      supabase.from("skus").select(`
+        id, sku_code, shopify_sku_code, is_customizable, generic_parent_sku_id,
+        generic_parent:skus!generic_parent_sku_id(is_customizable)
+      `),
+      supabase.from("b2b_orders").select(`
+        id, shipped_at, status,
+        items:b2b_order_items(sku_code, quantity),
+        dealer:dealers(fulfillment_source)
+      `).in("status", ["shipped", "fulfilled"]).gte("shipped_at", windowStartStr),
+      supabase.from("work_orders").select(`
+        id, shipped_at, status,
+        items:work_order_items(component_sku_id, quantity)
+      `).eq("status", "shipped").gte("shipped_at", windowStartStr),
+    ])
+
+    const skus = skusResult.data || []
+    const skuByCode: Record<string, any> = {}
+    skus.forEach(s => {
+      skuByCode[s.sku_code] = s
+      if (s.shopify_sku_code) skuByCode[s.shopify_sku_code] = s
+    })
+
+    const consumption: Record<string, number> = {}
+    const bomCache: Record<string, { component_sku_id: string; quantity: number }[] | null> = {}
+
+    async function getBomComponents(skuId: string) {
+      if (skuId in bomCache) return bomCache[skuId]
+      const { data: bomHeader } = await supabase.from("bom_headers").select("id").eq("sku_id", skuId).eq("is_active", true).single()
+      if (!bomHeader) { bomCache[skuId] = null; return null }
+      const { data: bomItems } = await supabase.from("bom_items").select("component_sku_id, quantity").eq("bom_id", bomHeader.id)
+      bomCache[skuId] = bomItems || []
+      return bomCache[skuId]
+    }
+
+    for (const order of ordersResult.data || []) {
+      const isDomestic = (order as any).dealer?.fulfillment_source !== "drop_ship"
+      if (!isDomestic) continue
+      for (const item of (order as any).items || []) {
+        const sku = skuByCode[item.sku_code]
+        if (!sku) continue
+        const genericParent = (sku as any).generic_parent
+        const isBuildTarget = sku.is_customizable || genericParent?.is_customizable
+        if (isBuildTarget) continue // counted via Work Order items below instead
+
+        const bomComponents = await getBomComponents(sku.id)
+        if (bomComponents && bomComponents.length > 0) {
+          for (const bi of bomComponents) {
+            if (!bi.component_sku_id) continue
+            consumption[bi.component_sku_id] = (consumption[bi.component_sku_id] || 0) + (bi.quantity || 0) * (item.quantity || 0)
+          }
+        } else {
+          // No BoM — this SKU's own sale is the depletion event.
+          consumption[sku.id] = (consumption[sku.id] || 0) + (item.quantity || 0)
+        }
+      }
+    }
+
+    for (const wo of workOrdersResult.data || []) {
+      for (const item of (wo as any).items || []) {
+        if (!item.component_sku_id) continue
+        consumption[item.component_sku_id] = (consumption[item.component_sku_id] || 0) + (item.quantity || 0)
+      }
+    }
+
+    const rates: Record<string, number> = {}
+    for (const [skuId, total] of Object.entries(consumption)) {
+      rates[skuId] = total / runRateWindow
+    }
+    setRunRates(rates)
+    setRunRatesLoading(false)
   }
 
   function getStockStatus(item: InventoryItem) {
@@ -56,6 +154,30 @@ export default function ForecastPage() {
 
   function getReorderCost(item: InventoryItem) {
     return getReorderQty(item) * (item.sku?.unit_cost || 0)
+  }
+
+  function getRunRate(item: InventoryItem) {
+    return runRates[item.sku_id] || 0
+  }
+
+  function getDaysLeft(item: InventoryItem) {
+    const rate = getRunRate(item)
+    if (rate <= 0) return null // no recent consumption signal
+    return item.qty_available / rate
+  }
+
+  function getLeadTime(item: InventoryItem) {
+    return item.sku?.lead_time_days || DEFAULT_LEAD_TIME
+  }
+
+  // The real value-add over the static min/max system: SKUs that look fine
+  // by qty_available > min_stock, but whose actual sell-through rate means
+  // they'll run dry before a reorder placed today would even arrive.
+  function isSellingFasterThanExpected(item: InventoryItem) {
+    const daysLeft = getDaysLeft(item)
+    if (daysLeft === null) return false
+    if (item.qty_available <= item.min_stock) return false // already caught by the static system
+    return daysLeft < getLeadTime(item)
   }
 
   function toggleSelect(id: string) {
@@ -100,6 +222,10 @@ export default function ForecastPage() {
   )
   const totalReorderCost = filteredNeedsReorder.reduce((sum, i) => sum + getReorderCost(i), 0)
 
+  const sellingFaster = sortItems(
+    inventory.filter(i => isSellingFasterThanExpected(i) && (categoryFilter === "all" || i.sku?.product?.category === categoryFilter))
+  )
+
   const selectStyle = { background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", color: "#fff", padding: "8px 12px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", cursor: "pointer" }
 
   return (
@@ -123,10 +249,11 @@ export default function ForecastPage() {
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
         {[
           { label: "SKUs Need Reorder", value: filteredNeedsReorder.length.toString(), color: filteredNeedsReorder.length > 0 ? "#A91E22" : "#5A9E5A", top: filteredNeedsReorder.length > 0 ? "#A91E22" : "#3A3F47" },
           { label: "Est. Reorder Cost", value: `$${Math.round(totalReorderCost).toLocaleString()}`, color: "#C4A93A", top: "#3A3F47" },
+          { label: "Selling Faster Than Expected", value: sellingFaster.length.toString(), color: sellingFaster.length > 0 ? "#C4A93A" : "#5A9E5A", top: sellingFaster.length > 0 ? "#C4A93A" : "#3A3F47" },
           { label: "Selected for PO", value: selectedItems.size.toString(), color: "#6A9CC8", top: "#3A3F47" },
         ].map(stat => (
           <div key={stat.label} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${stat.top}`, padding: "18px 20px" }}>
@@ -136,8 +263,8 @@ export default function ForecastPage() {
         ))}
       </div>
 
-      {/* Filter + Sort controls */}
-      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+      {/* Filter + Sort + Run Rate Window controls */}
+      <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
         <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} style={selectStyle}>
           <option value="all">All Categories</option>
           {availableCategories.sort().map(cat => (
@@ -151,12 +278,68 @@ export default function ForecastPage() {
           <option value="category">Category</option>
           <option value="sku_asc">SKU Code A–Z</option>
         </select>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "8px" }}>
+          <TrendingUp size={13} color="#6A9CC8" />
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A" }}>Run Rate Window:</span>
+          {([30, 60, 90] as RunRateWindow[]).map(w => (
+            <button key={w} onClick={() => setRunRateWindow(w)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "5px 11px", cursor: "pointer", border: "none", background: runRateWindow === w ? "#6A9CC8" : "transparent", color: runRateWindow === w ? "#fff" : "#8B919A", outline: runRateWindow === w ? "none" : "1px solid #3A3F47" }}>
+              {w}d
+            </button>
+          ))}
+        </div>
         {categoryFilter !== "all" && (
           <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6A9CC8", background: "rgba(106,156,200,0.1)", padding: "4px 10px" }}>
             {categoryFilter.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())} Only
           </span>
         )}
       </div>
+
+      <div style={{ background: "rgba(106,156,200,0.08)", border: "0.5px solid rgba(106,156,200,0.25)", padding: "10px 14px", display: "flex", gap: "10px", alignItems: "flex-start" }}>
+        <Info size={14} color="#6A9CC8" style={{ flexShrink: 0, marginTop: "2px" }} />
+        <p style={{ fontSize: "11px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+          Run rate is domestic component consumption per day over the trailing window — real Work Order selections, BoM-decomposed stock sales, plus direct sales for items with no BoM. Min/Max thresholds below are unchanged and still drive PO generation; run rate is a second signal layered on top.
+        </p>
+      </div>
+
+      {/* Selling Faster Than Expected — the new insight static min/max misses */}
+      {sellingFaster.length > 0 && (
+        <div style={{ background: "#2E343C", border: "0.5px solid rgba(196,169,58,0.25)", borderTop: "2px solid #C4A93A" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#262B32", display: "flex", alignItems: "center", gap: "10px" }}>
+            <TrendingUp size={14} color="#C4A93A" />
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#C4A93A" }}>
+              Selling Faster Than Expected — {sellingFaster.length} SKUs
+            </span>
+            <span style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif" }}>Above min stock, but running out before lead time allows a reorder to land</span>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#262B32" }}>
+                {["SKU", "Product", "Available", "Min", "Run Rate /day", "Days Left", "Lead Time"].map(h => (
+                  <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", padding: "8px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sellingFaster.map(item => {
+                const rate = getRunRate(item)
+                const daysLeft = getDaysLeft(item)
+                const leadTime = getLeadTime(item)
+                return (
+                  <tr key={item.id} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku?.sku_code}</td>
+                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.sku?.name}</td>
+                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#5A9E5A", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.qty_available}</td>
+                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.min_stock}</td>
+                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#C4A93A", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{rate.toFixed(2)}</td>
+                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#A91E22", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{daysLeft !== null ? Math.round(daysLeft) : "—"}d</td>
+                    <td style={{ padding: "10px 14px", fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{leadTime}d</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Visual stock chart */}
       <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
@@ -183,9 +366,11 @@ export default function ForecastPage() {
               const availPct = item.max_stock > 0 ? Math.min(100, (item.qty_available / item.max_stock) * 100) : 0
               const onOrderPct = item.max_stock > 0 ? Math.min(100 - availPct, (item.qty_on_order / item.max_stock) * 100) : 0
               const minPct = item.max_stock > 0 ? (item.min_stock / item.max_stock) * 100 : 20
+              const rate = getRunRate(item)
+              const daysLeft = getDaysLeft(item)
 
               return (
-                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "180px 1fr 80px", gap: "12px", alignItems: "center" }}>
+                <div key={item.id} style={{ display: "grid", gridTemplateColumns: "180px 1fr 80px 120px", gap: "12px", alignItems: "center" }}>
                   <div>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#E0E2E6", margin: 0, letterSpacing: "0.04em" }}>{item.sku?.sku_code}</p>
                     <p style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sku?.name}</p>
@@ -200,6 +385,20 @@ export default function ForecastPage() {
                   <div style={{ textAlign: "right" }}>
                     <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: barColor }}>{item.qty_available}</span>
                     <span style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}> / {item.max_stock}</span>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    {runRatesLoading ? (
+                      <span style={{ fontSize: "10px", color: "#666C75", fontFamily: "'Barlow', sans-serif" }}>...</span>
+                    ) : rate > 0 ? (
+                      <>
+                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#6A9CC8" }}>{rate.toFixed(2)}/day</span>
+                        <p style={{ fontSize: "9px", color: daysLeft !== null && daysLeft < getLeadTime(item) ? "#C4A93A" : "#787E87", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0" }}>
+                          {daysLeft !== null ? `${Math.round(daysLeft)}d left` : ""}
+                        </p>
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "10px", color: "#666C75", fontFamily: "'Barlow', sans-serif" }}>No usage</span>
+                    )}
                   </div>
                 </div>
               )
@@ -229,7 +428,7 @@ export default function ForecastPage() {
             <thead>
               <tr style={{ background: "#262B32" }}>
                 <th style={{ width: "40px", padding: "8px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}></th>
-                {["SKU", "Product", "Category", "Available", "Min", "Reorder Qty", "Est. Cost", "Action"].map(h => (
+                {["SKU", "Product", "Category", "Available", "Min", "Run Rate /day", "Days Left", "Reorder Qty", "Est. Cost", "Action"].map(h => (
                   <th key={h} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", padding: "8px 14px", textAlign: "left", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</th>
                 ))}
               </tr>
@@ -240,6 +439,8 @@ export default function ForecastPage() {
                 const reorderQty = getReorderQty(item)
                 const reorderCost = getReorderCost(item)
                 const isSelected = selectedItems.has(item.id)
+                const rate = getRunRate(item)
+                const daysLeft = getDaysLeft(item)
 
                 return (
                   <tr key={item.id} style={{ background: isSelected ? "rgba(169,30,34,0.05)" : "transparent", cursor: "pointer" }}
@@ -263,6 +464,12 @@ export default function ForecastPage() {
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: status === "critical" ? "#A91E22" : "#C4A93A" }}>{item.qty_available}</span>
                     </td>
                     <td style={{ padding: "10px 14px", fontSize: "12px", color: "#9BA0A8", fontFamily: "'Barlow Condensed', sans-serif", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{item.min_stock}</td>
+                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: rate > 0 ? "#6A9CC8" : "#666C75", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                      {rate > 0 ? rate.toFixed(2) : "—"}
+                    </td>
+                    <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: daysLeft !== null ? "#A91E22" : "#666C75", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                      {daysLeft !== null ? `${Math.round(daysLeft)}d` : "—"}
+                    </td>
                     <td style={{ padding: "10px 14px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff" }}>{reorderQty}</span>
                       <span style={{ fontSize: "10px", color: "#8B919A", marginLeft: "4px", fontFamily: "'Barlow', sans-serif" }}>units</span>
@@ -279,7 +486,7 @@ export default function ForecastPage() {
                 )
               })}
               <tr style={{ background: "#262B32" }}>
-                <td colSpan={7} style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", textAlign: "right" }}>
+                <td colSpan={9} style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", textAlign: "right" }}>
                   Total Reorder Cost
                 </td>
                 <td style={{ padding: "10px 14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff" }}>

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Bell, UserCheck } from "lucide-react"
+import { AlertTriangle, Clock, CheckCircle, XCircle, ChevronRight, Bell, UserCheck, MessageSquare } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 
 type AlertSeverity = "critical" | "warning" | "info" | "completed"
-type AlertCategory = "payment_in" | "payment_out" | "shipment" | "po" | "dealer_signup" | "order_placed"
+type AlertCategory = "payment_in" | "payment_out" | "shipment" | "po" | "dealer_signup" | "order_placed" | "dealer_message"
 
 type Alert = {
   id: string
@@ -76,7 +76,7 @@ export default function AlertsPage() {
 
     const newAlerts: Alert[] = []
 
-    // Portal notifications — dealer signups
+    // Portal notifications — dealer signups, order activity, and messages
     for (const notif of notifsResult.data || []) {
       if (notif.type === "new_dealer_signup") {
         newAlerts.push({
@@ -103,6 +103,22 @@ export default function AlertsPage() {
           category: "order_placed",
           actionLabel: "View in All Orders",
           actionHref: "/orders/all",
+          isPortalNotif: true,
+          notifId: notif.id,
+        })
+      } else if (notif.type === "dealer_message") {
+        // A dealer sent a message — reference_type tells us whether it's tied
+        // to a specific order (b2b_order) or a general inbox message (dealer).
+        newAlerts.push({
+          id: `notif-${notif.id}`,
+          severity: "warning",
+          title: notif.title,
+          description: notif.message,
+          reference: notif.reference_type === "b2b_order" ? "Order Message" : "General Message",
+          dueDate: notif.created_at.split("T")[0],
+          category: "dealer_message",
+          actionLabel: notif.reference_type === "b2b_order" ? "View Order & Reply" : "View & Reply",
+          actionHref: notif.reference_type === "b2b_order" ? "/orders/all" : "/dealers",
           isPortalNotif: true,
           notifId: notif.id,
         })
@@ -258,6 +274,7 @@ export default function AlertsPage() {
   const criticalCount = alerts.filter(a => a.severity === "critical" && !dismissed.includes(a.id)).length
   const warningCount = alerts.filter(a => a.severity === "warning" && !dismissed.includes(a.id)).length
   const dealerCount = alerts.filter(a => a.category === "dealer_signup" && !dismissed.includes(a.id)).length
+  const messageCount = alerts.filter(a => a.category === "dealer_message" && !dismissed.includes(a.id)).length
   const totalOwed = alerts.filter(a => a.category === "payment_out" && a.severity !== "completed" && !dismissed.includes(a.id) && a.amount).reduce((sum, a) => sum + (a.amount || 0), 0)
   const totalReceivable = alerts.filter(a => a.category === "payment_in" && a.severity !== "completed" && !dismissed.includes(a.id) && a.amount).reduce((sum, a) => sum + (a.amount || 0), 0)
 
@@ -270,7 +287,7 @@ export default function AlertsPage() {
           <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#A91E22", marginBottom: "4px" }}>Operations</p>
           <h1 style={{ fontSize: "32px", color: "#fff", margin: 0 }}>Alerts</h1>
           <p style={{ fontSize: "12px", color: "#B5BAC2", marginTop: "5px", fontFamily: "'Barlow', sans-serif", fontWeight: 400 }}>
-            {loading ? "Loading..." : `${alerts.length} total alerts — payments, dealer signups, orders`}
+            {loading ? "Loading..." : `${alerts.length} total alerts — payments, dealer signups, orders, messages`}
           </p>
         </div>
         {criticalCount > 0 && (
@@ -284,11 +301,12 @@ export default function AlertsPage() {
       </div>
 
       {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "10px" }}>
         {[
           { label: "Critical", value: criticalCount.toString(), color: criticalCount > 0 ? "#A91E22" : "#5A9E5A", top: criticalCount > 0 ? "#A91E22" : "#3A3F47" },
           { label: "Due Soon", value: warningCount.toString(), color: warningCount > 0 ? "#C4A93A" : "#5A9E5A", top: "#3A3F47" },
           { label: "Dealer Signups", value: dealerCount.toString(), color: dealerCount > 0 ? "#C4A93A" : "#5A9E5A", top: dealerCount > 0 ? "#C4A93A" : "#3A3F47", href: "/approvals" },
+          { label: "New Messages", value: messageCount.toString(), color: messageCount > 0 ? "#6A9CC8" : "#5A9E5A", top: messageCount > 0 ? "#6A9CC8" : "#3A3F47" },
           { label: "Owed to Factory", value: `$${Math.round(totalOwed).toLocaleString()}`, color: "#A91E22", top: "#A91E22" },
           { label: "Total Receivable", value: `$${Math.round(totalReceivable).toLocaleString()}`, color: "#5A9E5A", top: "#3A3F47" },
         ].map(stat => (
@@ -309,9 +327,9 @@ export default function AlertsPage() {
           ))}
         </div>
         <div style={{ display: "flex", gap: "6px", marginLeft: "auto", flexWrap: "wrap" }}>
-          {(["all", "dealer_signup", "order_placed", "payment_in", "payment_out", "shipment"] as const).map(c => (
+          {(["all", "dealer_signup", "order_placed", "dealer_message", "payment_in", "payment_out", "shipment"] as const).map(c => (
             <button key={c} onClick={() => setCategoryFilter(c)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "5px 10px", cursor: "pointer", color: categoryFilter === c ? "#fff" : "#8B919A", background: categoryFilter === c ? "rgba(255,255,255,0.08)" : "transparent", border: `0.5px solid ${categoryFilter === c ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)"}` }}>
-              {c === "all" ? "All Types" : c === "dealer_signup" ? "👤 Dealer Signups" : c === "order_placed" ? "📦 Orders" : c === "payment_in" ? "↓ Money In" : c === "payment_out" ? "↑ Money Out" : "✈ Shipments"}
+              {c === "all" ? "All Types" : c === "dealer_signup" ? "👤 Dealer Signups" : c === "order_placed" ? "📦 Orders" : c === "dealer_message" ? "💬 Messages" : c === "payment_in" ? "↓ Money In" : c === "payment_out" ? "↑ Money Out" : "✈ Shipments"}
             </button>
           ))}
         </div>
@@ -330,7 +348,7 @@ export default function AlertsPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {visible.map(alert => {
             const config = SEVERITY_CONFIG[alert.severity]
-            const Icon = alert.category === "dealer_signup" ? UserCheck : alert.category === "order_placed" ? Bell : config.icon
+            const Icon = alert.category === "dealer_signup" ? UserCheck : alert.category === "dealer_message" ? MessageSquare : alert.category === "order_placed" ? Bell : config.icon
             const daysLeft = daysUntil(alert.dueDate)
 
             return (

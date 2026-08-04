@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { LogOut, ChevronDown, ShoppingCart, Clock, FileText } from "lucide-react"
+import { LogOut, ChevronDown, ShoppingCart, Clock, FileText, MessageSquare } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 
 export default function PortalTopbar() {
@@ -20,6 +20,7 @@ export default function PortalTopbar() {
   const navItems = [
     { label: "Place Order", href: "/portal/order", icon: ShoppingCart },
     { label: "My Orders", href: "/portal/orders", icon: Clock },
+    { label: "Messages", href: "/portal/messages", icon: MessageSquare },
     { label: "Invoices", href: "/portal/invoices", icon: FileText },
   ]
 

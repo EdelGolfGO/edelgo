@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import Sidebar from "@/components/layout/Sidebar"
 import Topbar from "@/components/layout/Topbar"
+import IdleSessionManager from "@/components/auth/IdleSessionManager"
 
 export const metadata: Metadata = {
   title: "EdelFit | Dealer Portal",
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ margin: 0, padding: 0, background: "#080A0B", minHeight: "100vh" }}>
+        <IdleSessionManager />
         {children}
       </body>
     </html>

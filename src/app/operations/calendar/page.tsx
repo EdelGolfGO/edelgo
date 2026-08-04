@@ -240,6 +240,34 @@ export default function CalendarPage() {
     return events.filter(e => e.date.startsWith(prefix)).sort((a, b) => a.date.localeCompare(b.date))
   }
 
+  // Cash flow rollup for the month currently in view — derived directly from
+  // the same events already computed above, so navigating months with the
+  // existing prev/next controls recalculates this automatically with no
+  // extra fetching. "Paid" means the event's underlying deposit/final has an
+  // actual paid date; everything else (including overdue) is "scheduled" —
+  // it hasn't moved yet. PO-placed and ship-date events aren't cash
+  // movements themselves, so they're excluded from these totals.
+  // Scope note: this only reflects factory and Korea/distributor cash flow.
+  // Domestic dealer payments aren't tracked in EdelFit yet (handled in
+  // QuickBooks/manually) and intentionally aren't included here.
+  function getCashFlowForMonth() {
+    const monthEvents = getEventsForMonth()
+    let cashInPaid = 0, cashInScheduled = 0
+    let cashOutPaid = 0, cashOutScheduled = 0
+
+    for (const e of monthEvents) {
+      if (e.type === "deposit_due_from" || e.type === "final_due_from") {
+        if (e.status === "completed") cashInPaid += e.amount || 0
+        else cashInScheduled += e.amount || 0
+      } else if (e.type === "deposit_due_to" || e.type === "final_due_to") {
+        if (e.status === "completed") cashOutPaid += e.amount || 0
+        else cashOutScheduled += e.amount || 0
+      }
+    }
+
+    return { cashInPaid, cashInScheduled, cashOutPaid, cashOutScheduled }
+  }
+
   const upcomingAll = events
     .filter(e => {
       const d = daysUntil(e.date)
@@ -253,6 +281,9 @@ export default function CalendarPage() {
 
   const selectedEvents = selectedDay ? getEventsForDay(selectedDay) : []
   const monthEvents = getEventsForMonth()
+  const cashFlow = getCashFlowForMonth()
+  const netActual = cashFlow.cashInPaid - cashFlow.cashOutPaid
+  const netProjected = (cashFlow.cashInPaid + cashFlow.cashInScheduled) - (cashFlow.cashOutPaid + cashFlow.cashOutScheduled)
 
   const btnStyle = (active: boolean) => ({
     fontFamily: "'Barlow Condensed', sans-serif" as const,
@@ -280,6 +311,52 @@ export default function CalendarPage() {
         <div style={{ display: "flex", gap: "8px" }}>
           <button style={btnStyle(view === "calendar")} onClick={() => setView("calendar")}>📅 Calendar</button>
           <button style={btnStyle(view === "list")} onClick={() => setView("list")}>📋 List</button>
+        </div>
+      </div>
+
+      {/* Cash Flow This Month */}
+      <div>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "10px" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", margin: 0 }}>
+            Cash Flow — {MONTHS[currentMonth]} {currentYear}
+          </p>
+          <p style={{ fontSize: "11px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: 0, fontStyle: "italic" }}>
+            Factory &amp; Korea/distributor only — domestic dealer payments tracked in QuickBooks, not shown here
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+          <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #5A9E5A", padding: "16px 18px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>Cash In</p>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: "#5A9E5A", lineHeight: 1, margin: "0 0 6px" }}>
+              ${Math.round(cashFlow.cashInPaid + cashFlow.cashInScheduled).toLocaleString()}
+            </p>
+            <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+              Received <strong style={{ color: "#5A9E5A" }}>${Math.round(cashFlow.cashInPaid).toLocaleString()}</strong> · Scheduled ${Math.round(cashFlow.cashInScheduled).toLocaleString()}
+            </p>
+          </div>
+          <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: "2px solid #A91E22", padding: "16px 18px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>Cash Out</p>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: "#A91E22", lineHeight: 1, margin: "0 0 6px" }}>
+              ${Math.round(cashFlow.cashOutPaid + cashFlow.cashOutScheduled).toLocaleString()}
+            </p>
+            <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+              Paid <strong style={{ color: "#A91E22" }}>${Math.round(cashFlow.cashOutPaid).toLocaleString()}</strong> · Scheduled ${Math.round(cashFlow.cashOutScheduled).toLocaleString()}
+            </p>
+          </div>
+          <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${netActual >= 0 ? "#5A9E5A" : "#A91E22"}`, padding: "16px 18px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>Net (Actual)</p>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: netActual >= 0 ? "#5A9E5A" : "#A91E22", lineHeight: 1, margin: "0 0 6px" }}>
+              {netActual >= 0 ? "+" : "−"}${Math.round(Math.abs(netActual)).toLocaleString()}
+            </p>
+            <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Money actually received minus actually paid this month</p>
+          </div>
+          <div style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${netProjected >= 0 ? "#6A9CC8" : "#C4A93A"}`, padding: "16px 18px" }}>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#B5BAC2", marginBottom: "8px" }}>Net (Projected)</p>
+            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: netProjected >= 0 ? "#6A9CC8" : "#C4A93A", lineHeight: 1, margin: "0 0 6px" }}>
+              {netProjected >= 0 ? "+" : "−"}${Math.round(Math.abs(netProjected)).toLocaleString()}
+            </p>
+            <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: 0 }}>If every scheduled item this month is paid on time</p>
+          </div>
         </div>
       </div>
 

@@ -9,11 +9,11 @@ const ADMIN_EMAILS = [
   'accounting@edelgolf.com',
   'alex@pinsandaces.com',
   'edeldev@edelgolf.com',
+  'kevin@edelgolf.com',
 ]
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -52,15 +52,15 @@ export async function middleware(request: NextRequest) {
 
   // Check if email is in admin whitelist — auto-promote if needed
   const isAdminEmail = ADMIN_EMAILS.includes(user.email || "")
-
   if (isAdminEmail) {
-    // Ensure profile is set to admin
+    // Ensure profile is set to admin — deliberately excluded full_name here
+    // so it doesn't overwrite a real name that was set manually in the
+    // database. Set full_name directly in Supabase if needed.
     await supabase.from("profiles").upsert({
       id: user.id,
       email: user.email,
       role: "admin",
       is_approved: true,
-      full_name: user.email,
     }, { onConflict: "id" })
 
     // Admin trying to access portal — redirect to dashboard

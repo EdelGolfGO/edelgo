@@ -1,8 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Pencil, X, Save, TrendingDown } from "lucide-react"
+import { Search, Pencil, X, Save, TrendingDown, FileText } from "lucide-react"
 import { createClient } from "@/lib/supabase"
+
+type OpenPORef = {
+  po_id: string
+  po_number: string
+  status: string
+  quantity: number
+}
 
 type StockRecord = {
   id: string
@@ -19,6 +26,7 @@ type StockRecord = {
     image_url: string | null
     product: { name: string; category: string }
   }
+  open_pos?: OpenPORef[]
 }
 
 const CATEGORY_COLORS: Record<string, { color: string; bg: string }> = {
@@ -28,6 +36,10 @@ const CATEGORY_COLORS: Record<string, { color: string; bg: string }> = {
   accessory:  { color: "#7AAB6A", bg: "rgba(122,171,106,0.1)" },
   apparel:    { color: "#B5BAC2",    bg: "rgba(136,136,136,0.1)" },
 }
+
+// A PO still counts toward "on order" unless it's been fully received or
+// was cancelled — draft/placed/in_production/shipped are all still pending.
+const OPEN_PO_STATUSES = ["draft", "placed", "in_production", "shipped"]
 
 export default function StockLevelsPage() {
   const [records, setRecords] = useState<StockRecord[]>([])
@@ -44,17 +56,49 @@ export default function StockLevelsPage() {
   async function loadData() {
     setLoading(true)
     const supabase = createClient()
-    const { data } = await supabase
-      .from("inventory")
-      .select(`
-        *,
-        sku:skus(
-          sku_code, name, image_url,
-          product:products(name, category)
-        )
-      `)
-      .order("sku_id")
-    if (data) setRecords(data as any)
+    const [{ data }, { data: poItemsData }] = await Promise.all([
+      supabase
+        .from("inventory")
+        .select(`
+          *,
+          sku:skus(
+            sku_code, name, image_url,
+            product:products(name, category)
+          )
+        `)
+        .order("sku_id"),
+      // Pull every PO line item still open (not received/cancelled), joined
+      // to its parent PO for the number/status, so we can compute real
+      // "on order" quantities per SKU instead of trusting a manually typed
+      // number that can drift out of sync.
+      supabase
+        .from("purchase_order_items")
+        .select("sku_id, quantity, po:purchase_orders(id, po_number, status)")
+        .not("sku_id", "is", null),
+    ])
+
+    if (data) {
+      // Build a map of sku_id -> open PO references with quantities
+      const openPOsBySkuId: Record<string, OpenPORef[]> = {}
+      ;(poItemsData || []).forEach((item: any) => {
+        const po = item.po
+        if (!po || !OPEN_PO_STATUSES.includes(po.status)) return
+        if (!openPOsBySkuId[item.sku_id]) openPOsBySkuId[item.sku_id] = []
+        openPOsBySkuId[item.sku_id].push({
+          po_id: po.id,
+          po_number: po.po_number,
+          status: po.status,
+          quantity: item.quantity,
+        })
+      })
+
+      const enriched = (data as any[]).map(record => {
+        const openPOs = openPOsBySkuId[record.sku_id] || []
+        const computedOnOrder = openPOs.reduce((sum, p) => sum + (p.quantity || 0), 0)
+        return { ...record, open_pos: openPOs, qty_on_order: computedOnOrder }
+      })
+      setRecords(enriched as any)
+    }
     setLoading(false)
   }
 
@@ -62,7 +106,6 @@ export default function StockLevelsPage() {
     setEditForm({
       qty_on_hand: record.qty_on_hand?.toString() || "0",
       qty_reserved: record.qty_reserved?.toString() || "0",
-      qty_on_order: record.qty_on_order?.toString() || "0",
       min_stock: record.min_stock?.toString() || "5",
       max_stock: record.max_stock?.toString() || "50",
       reorder_qty: record.reorder_qty?.toString() || "20",
@@ -79,17 +122,19 @@ export default function StockLevelsPage() {
     const oldQty = editModal.qty_on_hand
     const newQty = parseInt(editForm.qty_on_hand) || 0
 
+    // qty_on_order is intentionally not saved here — it's computed live from
+    // open PO line items (see loadData), not a manually editable field
+    // anymore, so it can never drift out of sync with what's actually on
+    // order.
     await supabase.from("inventory").update({
       qty_on_hand: newQty,
       qty_reserved: parseInt(editForm.qty_reserved) || 0,
-      qty_on_order: parseInt(editForm.qty_on_order) || 0,
       min_stock: parseInt(editForm.min_stock) || 0,
       max_stock: parseInt(editForm.max_stock) || 0,
       reorder_qty: parseInt(editForm.reorder_qty) || 0,
       updated_at: new Date().toISOString(),
     }).eq("id", editModal.id)
 
-    // Log adjustment if qty changed
     if (oldQty !== newQty) {
       await supabase.from("inventory_transactions").insert({
         sku_id: editModal.sku_id,
@@ -196,6 +241,7 @@ export default function StockLevelsPage() {
                 const statusColor = isCritical ? "#A91E22" : isLow ? "#C4A93A" : "#5A9E5A"
                 const statusLabel = isCritical ? "Out of Stock" : isLow ? "Low Stock" : "Healthy"
                 const statusBg = isCritical ? "rgba(169,30,34,0.1)" : isLow ? "rgba(196,169,58,0.1)" : "rgba(90,158,90,0.1)"
+                const openPOs = record.open_pos || []
 
                 return (
                   <tr key={record.id}
@@ -220,7 +266,19 @@ export default function StockLevelsPage() {
                       <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "18px", fontWeight: 700, color: statusColor }}>{qty}</span>
                     </td>
                     <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#8B919A", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.qty_reserved ?? 0}</td>
-                    <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#6A9CC8", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.qty_on_order ?? 0}</td>
+                    <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
+                      {openPOs.length > 0 ? (
+                        <div title={openPOs.map(p => `${p.po_number} (${p.status}) — ${p.quantity}`).join("\n")} style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "default" }}>
+                          <FileText size={11} color="#6A9CC8" />
+                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#6A9CC8" }}>{record.qty_on_order}</span>
+                          <span style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif" }}>
+                            ({openPOs.map(p => p.po_number).join(", ")})
+                          </span>
+                        </div>
+                      ) : (
+                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#3A3F47" }}>0</span>
+                      )}
+                    </td>
                     <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", color: "#787E87", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.min_stock}</td>
                     <td style={{ padding: "10px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", color: "#787E87", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>{record.max_stock}</td>
                     <td style={{ padding: "10px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.04)" }}>
@@ -255,18 +313,41 @@ export default function StockLevelsPage() {
               <button onClick={() => setEditModal(null)} style={{ background: "none", border: "none", color: "#8B919A", cursor: "pointer" }}><X size={20} /></button>
             </div>
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
-                {[
-                  { label: "Qty On Hand", key: "qty_on_hand", highlight: true },
-                  { label: "Qty Reserved", key: "qty_reserved" },
-                  { label: "Qty On Order", key: "qty_on_order" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label style={{ ...labelStyle, color: f.highlight ? "#6A9CC8" : "#9BA0A8" }}>{f.label}</label>
-                    <input type="number" style={{ ...inputStyle, borderColor: f.highlight ? "rgba(106,156,200,0.3)" : "rgba(255,255,255,0.12)" }} value={editForm[f.key]} onChange={e => setEditForm((v: any) => ({ ...v, [f.key]: e.target.value }))} />
-                  </div>
-                ))}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ ...labelStyle, color: "#6A9CC8" }}>Qty On Hand</label>
+                  <input type="number" style={{ ...inputStyle, borderColor: "rgba(106,156,200,0.3)" }} value={editForm.qty_on_hand} onChange={e => setEditForm((v: any) => ({ ...v, qty_on_hand: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Qty Reserved</label>
+                  <input type="number" style={inputStyle} value={editForm.qty_reserved} onChange={e => setEditForm((v: any) => ({ ...v, qty_reserved: e.target.value }))} />
+                </div>
               </div>
+
+              {/* Qty On Order is now read-only — computed live from open PO line items */}
+              <div style={{ background: "#23282E", border: "0.5px solid rgba(106,156,200,0.2)", padding: "12px 14px" }}>
+                <p style={{ ...labelStyle, color: "#6A9CC8", marginBottom: "8px" }}>Qty On Order (from open POs)</p>
+                {(editModal.open_pos || []).length === 0 ? (
+                  <p style={{ fontSize: "12px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: 0, fontStyle: "italic" }}>Not currently on any open PO</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {(editModal.open_pos || []).map(p => (
+                      <div key={p.po_id} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'Barlow', sans-serif" }}>
+                        <span style={{ color: "#E0E2E6" }}>{p.po_number} <span style={{ color: "#787E87" }}>({p.status.replace("_", " ")})</span></span>
+                        <span style={{ color: "#6A9CC8", fontWeight: 700 }}>{p.quantity} units</span>
+                      </div>
+                    ))}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, marginTop: "4px", paddingTop: "6px", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+                      <span style={{ color: "#9BA0A8" }}>Total On Order</span>
+                      <span style={{ color: "#6A9CC8" }}>{editModal.qty_on_order}</span>
+                    </div>
+                  </div>
+                )}
+                <p style={{ fontSize: "10px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: "8px 0 0" }}>
+                  To change this, add or edit line items on the relevant PO in PO Tracker.
+                </p>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
                 {[
                   { label: "Min Stock", key: "min_stock" },

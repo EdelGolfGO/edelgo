@@ -56,6 +56,7 @@ export default function PortalOrderPage() {
   const [loading, setLoading] = useState(true)
   const [lightboxSku, setLightboxSku] = useState<SKU | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [noAccessGranted, setNoAccessGranted] = useState(false)
 
   useEffect(() => { loadData() }, [])
 
@@ -64,17 +65,32 @@ export default function PortalOrderPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [profileResult, skusResult, imagesResult] = await Promise.all([
-      supabase.from("profiles").select("*, dealer:dealers(*)").eq("id", user.id).single(),
+    const profileResult = await supabase.from("profiles").select("*, dealer:dealers(*)").eq("id", user.id).single()
+    if (profileResult.data) setProfile(profileResult.data)
+
+    const dealerId = profileResult.data?.dealer_id
+    if (!dealerId) { setLoading(false); return }
+
+    // Only the SKUs explicitly granted to this dealer should appear in their
+    // catalog — pull the access list first, then filter the SKU query by it.
+    const { data: accessRows } = await supabase.from("dealer_sku_access").select("sku_id").eq("dealer_id", dealerId)
+    const allowedSkuIds = (accessRows || []).map((r: any) => r.sku_id)
+
+    if (allowedSkuIds.length === 0) {
+      setNoAccessGranted(true)
+      setLoading(false)
+      return
+    }
+
+    const [skusResult, imagesResult] = await Promise.all([
       supabase.from("skus")
         .select("*, product:products(name, category)")
         .eq("is_active", true)
         .eq("is_orderable", true)
+        .in("id", allowedSkuIds)
         .order("sku_code"),
       supabase.from("sku_images").select("*").order("sort_order"),
     ])
-
-    if (profileResult.data) setProfile(profileResult.data)
 
     if (skusResult.data) {
       const imagesBySku: Record<string, SKUImage[]> = {}
@@ -110,9 +126,9 @@ export default function PortalOrderPage() {
 
   function getPriceForTier(sku: SKU): number {
     const tier = profile?.pricing_tier || "wholesaler"
-    if (tier === "fitter") return sku.fitter_price || sku.wholesaler_price || sku.msrp
-    if (tier === "distributor") return sku.distributor_price || sku.wholesaler_price || sku.msrp
-    return sku.wholesaler_price || sku.msrp
+    if (tier === "fitter") return sku.fitter_price || sku.wholesaler_price || sku.msrp || 0
+    if (tier === "distributor") return sku.distributor_price || sku.wholesaler_price || sku.msrp || 0
+    return sku.wholesaler_price || sku.msrp || 0
   }
 
   function addToOrder(sku: SKU) {
@@ -210,6 +226,18 @@ export default function PortalOrderPage() {
     )
   }
 
+  if (noAccessGranted) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "16px", textAlign: "center" }}>
+        <div style={{ width: "64px", height: "64px", background: "rgba(196,169,58,0.1)", border: "1px solid rgba(196,169,58,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px" }}>!</div>
+        <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#fff", margin: 0 }}>No Catalog Access Yet</h2>
+        <p style={{ fontSize: "14px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0, maxWidth: "420px" }}>
+          Your account hasn't been granted access to any products yet. Contact Edel Golf to have your catalog set up.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
 
@@ -284,8 +312,8 @@ export default function PortalOrderPage() {
                       <p style={{ fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0, lineHeight: "1.3" }}>{sku.name}</p>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto" }}>
                         <div>
-                          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff", margin: 0 }}>${price.toFixed(2)}</p>
-                          {sku.msrp && sku.msrp !== price && <p style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0" }}>MSRP ${sku.msrp.toFixed(2)}</p>}
+                          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#fff", margin: 0 }}>${(price || 0).toFixed(2)}</p>
+                          {sku.msrp && sku.msrp !== price && <p style={{ fontSize: "10px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0" }}>MSRP ${(sku.msrp || 0).toFixed(2)}</p>}
                         </div>
                         <button onClick={() => addToOrder(sku)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "6px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
                           <Plus size={12} /> Add
@@ -331,10 +359,16 @@ export default function PortalOrderPage() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
                         <button onClick={() => updateQty(item.id, item.quantity - 1)} style={{ width: "22px", height: "22px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.12)", color: "#B5BAC2", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", width: "24px", textAlign: "center" }}>{item.quantity}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={item.quantity}
+                          onChange={e => updateQty(item.id, parseInt(e.target.value) || 0)}
+                          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", width: "36px", textAlign: "center", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", outline: "none", padding: "3px 2px" }}
+                        />
                         <button onClick={() => updateQty(item.id, item.quantity + 1)} style={{ width: "22px", height: "22px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.12)", color: "#B5BAC2", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                       </div>
-                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#fff", margin: 0, flexShrink: 0 }}>${(item.unit_price * item.quantity).toFixed(2)}</p>
+                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#fff", margin: 0, flexShrink: 0 }}>${((item.unit_price || 0) * item.quantity).toFixed(2)}</p>
                       <button onClick={() => setOrderItems(prev => prev.filter(i => i.id !== item.id))} style={{ background: "none", border: "none", color: "#666C75", cursor: "pointer", padding: "0", flexShrink: 0 }}>
                         <X size={13} />
                       </button>
@@ -370,7 +404,7 @@ export default function PortalOrderPage() {
                 <div>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", margin: "0 0 4px" }}>{lightboxSku.sku_code}</p>
                   <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>{lightboxSku.name}</p>
-                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#5A9E5A", margin: 0 }}>${getPriceForTier(lightboxSku).toFixed(2)}</p>
+                  <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "16px", fontWeight: 700, color: "#5A9E5A", margin: 0 }}>${(getPriceForTier(lightboxSku) || 0).toFixed(2)}</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   {imgs.length > 1 && (

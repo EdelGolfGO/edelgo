@@ -9,10 +9,11 @@ type SKU = {
   id: string
   sku_code: string
   name: string
-  msrp: number
-  wholesaler_price: number
-  fitter_price: number
+  msrp: number | null
+  wholesaler_price: number | null
+  fitter_price: number | null
   is_active: boolean
+  sku_type?: string
   image_url: string | null
   product: { name: string; category: string }
 }
@@ -80,18 +81,26 @@ export default function NewOrderPage() {
       supabase.from("dealers").select("id, name, company").order("name"),
     ])
     if (skusResult.data) {
-      setSkus(skusResult.data as any)
-      const cats = [...new Set((skusResult.data as any[]).map(s => s.product?.category).filter(Boolean))]
+      // Consumables and raw components don't carry sellable pricing
+      // (msrp/wholesaler_price/fitter_price are all null by design — they use
+      // cost_per_uom instead) and aren't things a dealer orders directly, so
+      // they're excluded from this catalog entirely rather than crashing on
+      // a null price later.
+      const orderable = (skusResult.data as any[]).filter(s => s.sku_type !== "consumable")
+      setSkus(orderable as any)
+      const cats = [...new Set(orderable.map(s => s.product?.category).filter(Boolean))]
       if (cats.length > 0) setActiveCategory(cats[0])
     }
     if (dealersResult.data) setDealers(dealersResult.data)
     setLoading(false)
   }
 
+  // Always returns a real number — never null — so every downstream
+  // .toFixed() call is safe regardless of which pricing fields a SKU has set.
   function getPrice(sku: SKU): number {
     const tier = selectedDealer?.pricing_tier || "wholesaler"
-    if (tier === "fitter") return sku.fitter_price || sku.wholesaler_price || sku.msrp
-    return sku.wholesaler_price || sku.msrp
+    if (tier === "fitter") return sku.fitter_price || sku.wholesaler_price || sku.msrp || 0
+    return sku.wholesaler_price || sku.msrp || 0
   }
 
   function addToOrder(sku: SKU) {
@@ -251,7 +260,6 @@ export default function NewOrderPage() {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {/* Row 1: Name, Company, Email, PO Number */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
               <div>
                 <label style={labelStyle}>Customer Name *</label>
@@ -270,7 +278,6 @@ export default function NewOrderPage() {
                 <input style={inputStyle} placeholder="PO-12345" value={manualPO} onChange={e => setManualPO(e.target.value)} />
               </div>
             </div>
-            {/* Row 2: Address */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div>
                 <label style={labelStyle}>Address Line 1</label>
@@ -281,7 +288,6 @@ export default function NewOrderPage() {
                 <input style={inputStyle} placeholder="Suite 100" value={manualAddress2} onChange={e => setManualAddress2(e.target.value)} />
               </div>
             </div>
-            {/* Row 3: City, State, Postal, Country, Type */}
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: "12px" }}>
               <div>
                 <label style={labelStyle}>City</label>
@@ -307,7 +313,6 @@ export default function NewOrderPage() {
                 </select>
               </div>
             </div>
-            {/* Special Instructions */}
             <div>
               <label style={labelStyle}>Special Instructions (optional)</label>
               <textarea style={{ ...inputStyle, minHeight: "70px", resize: "vertical" }} placeholder="Any special instructions for this order..." value={manualInstructions} onChange={e => setManualInstructions(e.target.value)} />
@@ -366,7 +371,7 @@ export default function NewOrderPage() {
                       <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, color: "#A91E22", margin: 0, letterSpacing: "0.04em" }}>{sku.sku_code}</p>
                       <p style={{ fontSize: "11px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0, lineHeight: "1.3" }}>{sku.name}</p>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", paddingTop: "6px" }}>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff", margin: 0 }}>${price.toFixed(2)}</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff", margin: 0 }}>${(price || 0).toFixed(2)}</p>
                         <button onClick={() => addToOrder(sku)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "3px" }}>
                           <Plus size={11} /> Add
                         </button>
@@ -409,10 +414,16 @@ export default function NewOrderPage() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
                       <button onClick={() => updateQty(item.id, item.quantity - 1)} style={{ width: "20px", height: "20px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.12)", color: "#B5BAC2", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", width: "22px", textAlign: "center" }}>{item.quantity}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.quantity}
+                        onChange={e => updateQty(item.id, parseInt(e.target.value) || 0)}
+                        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", width: "34px", textAlign: "center", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", outline: "none", padding: "2px" }}
+                      />
                       <button onClick={() => updateQty(item.id, item.quantity + 1)} style={{ width: "20px", height: "20px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.12)", color: "#B5BAC2", cursor: "pointer", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
                     </div>
-                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", margin: 0, flexShrink: 0 }}>${(item.unit_price * item.quantity).toFixed(2)}</p>
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, color: "#fff", margin: 0, flexShrink: 0 }}>${((item.unit_price || 0) * item.quantity).toFixed(2)}</p>
                     <button onClick={() => setOrderItems(prev => prev.filter(i => i.id !== item.id))} style={{ background: "none", border: "none", color: "#666C75", cursor: "pointer", padding: 0, flexShrink: 0 }}>
                       <X size={13} />
                     </button>

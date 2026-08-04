@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Upload, ChevronDown, FileText, ExternalLink, Trash2, Pencil, ChevronRight } from "lucide-react"
+import { Plus, Upload, ChevronDown, FileText, ExternalLink, Trash2, Pencil, ChevronRight, FileDown } from "lucide-react"
 import DocumentModal from "@/components/operations/DocumentModal"
 import { createClient } from "@/lib/supabase"
 
@@ -20,6 +20,7 @@ type PO = {
   id: string
   po_number: string
   factory_name: string
+  factory_id?: string | null
   order_date: string
   expected_ship_date: string
   actual_ship_date?: string
@@ -29,6 +30,7 @@ type PO = {
   final_payment_paid_date?: string
   notes?: string
   document_urls?: string
+  pdf_url?: string | null
   items: POItem[]
 }
 
@@ -65,6 +67,7 @@ export default function POTrackerPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<PO | null>(null)
   const [filterStatus, setFilterStatus] = useState<POStatus | "all">("all")
   const [uploadingFor, setUploadingFor] = useState<string | null>(null)
+  const [generatingPdfFor, setGeneratingPdfFor] = useState<string | null>(null)
 
   useEffect(() => { loadPOs() }, [])
 
@@ -119,6 +122,29 @@ export default function POTrackerPage() {
     loadPOs()
   }
 
+  // Calls the PDF generation route, which builds the PO PDF in Edel's exact
+  // format, uploads it to Storage, and attaches it to this PO's documents.
+  async function handleGeneratePdf(po: PO) {
+    setGeneratingPdfFor(po.id)
+    try {
+      const res = await fetch("/api/po/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ po_id: po.id }),
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        alert(`Failed to generate PDF: ${result.error || "Unknown error"}`)
+      } else {
+        window.open(result.pdf_url, "_blank")
+        loadPOs()
+      }
+    } catch (err: any) {
+      alert(`Failed to generate PDF: ${err.message}`)
+    }
+    setGeneratingPdfFor(null)
+  }
+
   const filtered = filterStatus === "all" ? pos : pos.filter(p => p.status === filterStatus)
   const totalOutstanding = pos.filter(p => !p.final_payment_paid_date && p.status !== "cancelled").reduce((sum, p) => sum + p.total_amount * 0.5, 0)
   const totalDepositsOwed = pos.filter(p => !p.deposit_paid_date && p.status !== "cancelled").reduce((sum, p) => sum + p.total_amount * 0.5, 0)
@@ -154,6 +180,22 @@ export default function POTrackerPage() {
           </div>
         ))}
       </div>
+
+      {/* Deposit owed alert */}
+      {pos.filter(p => p.status === "placed" && !p.deposit_paid_date).length > 0 && (
+        <div style={{ background: "rgba(169,30,34,0.08)", border: "0.5px solid rgba(169,30,34,0.3)", borderLeft: "3px solid #A91E22", padding: "14px 18px" }}>
+          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#A91E22", margin: "0 0 8px" }}>
+            Deposit{pos.filter(p => p.status === "placed" && !p.deposit_paid_date).length !== 1 ? "s" : ""} Owed
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {pos.filter(p => p.status === "placed" && !p.deposit_paid_date).map(p => (
+              <p key={p.id} style={{ fontSize: "13px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0 }}>
+                Deposit owed on <strong style={{ color: "#fff" }}>{p.po_number}</strong> — ${(p.total_amount * 0.5).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.10)" }}>
@@ -351,6 +393,12 @@ export default function POTrackerPage() {
 
                     {/* Actions */}
                     <div style={{ padding: "16px 20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => handleGeneratePdf(po)}
+                        disabled={generatingPdfFor === po.id}
+                        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: generatingPdfFor === po.id ? "#666C75" : "#6A9CC8", border: "none", padding: "7px 14px", cursor: generatingPdfFor === po.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                      ><FileDown size={12} /> {generatingPdfFor === po.id ? "Generating..." : po.pdf_url ? "Re-Generate PO PDF" : "Generate PO PDF"}</button>
+
                       <label style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                         <input type="file" accept=".pdf,.png,.jpg,.xlsx" multiple onChange={e => handleAdditionalUpload(po, e)} style={{ display: "none" }} />
                         <Upload size={12} /> {uploadingFor === po.id ? "Uploading..." : "Add Doc"}
@@ -361,7 +409,15 @@ export default function POTrackerPage() {
                         style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                       ><Pencil size={12} /> Edit PO</button>
 
-                      {po.status === "placed" && <button onClick={() => updatePOStatus(po.id, "in_production")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#C4A93A", border: "none", padding: "7px 14px", cursor: "pointer" }}>Mark In Production</button>}
+                      {po.status === "placed" && !po.deposit_paid_date && (
+                        <button onClick={() => updatePOStatus(po.id, po.status, { deposit_paid_date: new Date().toISOString().split("T")[0] })}
+                          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "7px 14px", cursor: "pointer" }}>
+                          Mark Deposit Paid
+                        </button>
+                      )}
+                      {po.status === "placed" && po.deposit_paid_date && (
+                        <button onClick={() => updatePOStatus(po.id, "in_production")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#C4A93A", border: "none", padding: "7px 14px", cursor: "pointer" }}>Mark In Production</button>
+                      )}
                       {po.status === "in_production" && <button onClick={() => updatePOStatus(po.id, "shipped", { actual_ship_date: new Date().toISOString().split("T")[0] })} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#A91E22", border: "none", padding: "7px 14px", cursor: "pointer" }}>Mark as Shipped</button>}
                       {po.status === "shipped" && <button onClick={() => updatePOStatus(po.id, "received")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#6A9CC8", border: "none", padding: "7px 14px", cursor: "pointer" }}>Mark Received</button>}
                       {po.status === "shipped" && !po.final_payment_paid_date && <button onClick={() => updatePOStatus(po.id, po.status, { final_payment_paid_date: new Date().toISOString().split("T")[0] })} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#5A9E5A", border: "none", padding: "7px 14px", cursor: "pointer" }}>Mark Final Payment Paid</button>}

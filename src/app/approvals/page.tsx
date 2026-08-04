@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase"
 import { CheckCircle, XCircle, User, Mail, Building2, Phone } from "lucide-react"
+import DealerSkuAccessPicker from "@/components/dealers/DealerSkuAccessPicker"
 
 type PendingDealer = {
   id: string
@@ -68,6 +69,7 @@ export default function DealerApprovalsPage() {
   const [loading, setLoading] = useState(true)
   const [approving, setApproving] = useState<string | null>(null)
   const [forms, setForms] = useState<Record<string, any>>({})
+  const [skuAccess, setSkuAccess] = useState<Record<string, Set<string>>>({})
   const [expanded, setExpanded] = useState<string | null>(null)
 
   useEffect(() => { loadData() }, [])
@@ -82,10 +84,10 @@ export default function DealerApprovalsPage() {
     if (pendingResult.data) {
       setPending(pendingResult.data)
       const initial: Record<string, any> = {}
+      const initialAccess: Record<string, Set<string>> = {}
       pendingResult.data.forEach((p: any) => {
         initial[p.id] = {
           ...emptyApprovalForm,
-          // Pre-fill from what dealer entered at signup
           company: p.company || "",
           phone: p.phone || "",
           address_line1: p.address_line1 || "",
@@ -95,8 +97,10 @@ export default function DealerApprovalsPage() {
           country: p.country || "US",
           dealer_type: p.dealer_type || "wholesale",
         }
+        initialAccess[p.id] = new Set()
       })
       setForms(initial)
+      setSkuAccess(initialAccess)
       if (pendingResult.data.length > 0) setExpanded(pendingResult.data[0].id)
     }
     if (dealersResult.data) setDealers(dealersResult.data)
@@ -111,10 +115,10 @@ export default function DealerApprovalsPage() {
     setApproving(profile.id)
     const supabase = createClient()
     const form = forms[profile.id]
+    const grantedSkuIds = skuAccess[profile.id] || new Set()
 
     let dealerId = form.link_existing ? form.existing_dealer_id : null
 
-    // Create new dealer record if not linking to existing
     if (!form.link_existing) {
       const { data: newDealer, error: dealerError } = await supabase.from("dealers").insert({
         name: profile.full_name,
@@ -138,7 +142,6 @@ export default function DealerApprovalsPage() {
       if (newDealer) dealerId = newDealer.id
     }
 
-    // Update profile — approve with pricing tier and dealer link
     await supabase.from("profiles").update({
       is_approved: true,
       pricing_tier: form.pricing_tier,
@@ -146,7 +149,16 @@ export default function DealerApprovalsPage() {
       updated_at: new Date().toISOString(),
     }).eq("id", profile.id)
 
-    // Mark notification as read
+    // Grant catalog access for whichever SKUs were selected in the picker
+    // before approving. If none were selected, the dealer simply sees an
+    // empty catalog until access is granted later from the Dealers page.
+    if (dealerId && grantedSkuIds.size > 0) {
+      const { error: accessError } = await supabase.from("dealer_sku_access").insert(
+        Array.from(grantedSkuIds).map(skuId => ({ dealer_id: dealerId, sku_id: skuId }))
+      )
+      if (accessError) console.error("SKU access insert error:", accessError)
+    }
+
     await supabase.from("portal_notifications")
       .update({ is_read: true })
       .eq("type", "new_dealer_signup")
@@ -197,7 +209,6 @@ export default function DealerApprovalsPage() {
             return (
               <div key={profile.id} style={{ background: "#2E343C", border: "0.5px solid rgba(196,169,58,0.25)", borderTop: "2px solid #C4A93A" }}>
 
-                {/* Header row - always visible */}
                 <div onClick={() => setExpanded(isExpanded ? null : profile.id)} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "14px", cursor: "pointer" }}>
                   <div style={{ width: "40px", height: "40px", background: "rgba(196,169,58,0.1)", border: "1px solid rgba(196,169,58,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <User size={18} color="#C4A93A" />
@@ -219,11 +230,9 @@ export default function DealerApprovalsPage() {
                   </span>
                 </div>
 
-                {/* Expanded form */}
                 {isExpanded && (
                   <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)", padding: "20px" }}>
 
-                    {/* Section: Account settings */}
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#A91E22", marginBottom: "12px" }}>Account Settings</p>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "20px" }}>
                       <div>
@@ -246,10 +255,8 @@ export default function DealerApprovalsPage() {
                       </div>
                     </div>
 
-                    {/* Section: Dealer record */}
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Dealer Record</p>
 
-                    {/* Link to existing toggle */}
                     <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
                       <button onClick={() => updateForm(profile.id, "link_existing", false)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: !form.link_existing ? "#fff" : "#8B919A", background: !form.link_existing ? "#A91E22" : "transparent", border: !form.link_existing ? "none" : "1px solid #666C75", padding: "6px 14px", cursor: "pointer" }}>
                         Create New Dealer Record
@@ -322,7 +329,21 @@ export default function DealerApprovalsPage() {
                       </div>
                     )}
 
-                    {/* Summary of what will be set */}
+                    {/* Catalog access — which SKUs this dealer will be able to see and order */}
+                    <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>
+                      Catalog Access
+                    </p>
+                    <div style={{ marginBottom: "20px" }}>
+                      <DealerSkuAccessPicker
+                        dealerId={null}
+                        selectedIds={skuAccess[profile.id] || new Set()}
+                        onChange={ids => setSkuAccess(prev => ({ ...prev, [profile.id]: ids }))}
+                      />
+                      <p style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "8px 0 0" }}>
+                        Only the SKUs granted here will appear in this dealer's order catalog. You can change this at any time from the Dealers page after approval.
+                      </p>
+                    </div>
+
                     <div style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.06)", padding: "12px 16px", marginBottom: "16px", display: "flex", gap: "24px" }}>
                       <div>
                         <p style={labelStyle}>Pricing</p>
@@ -336,9 +357,12 @@ export default function DealerApprovalsPage() {
                         <p style={labelStyle}>Terms</p>
                         <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#E0E2E6", margin: 0 }}>{PAYMENT_TERMS.find(t => t.value === form.payment_terms)?.label}</p>
                       </div>
+                      <div>
+                        <p style={labelStyle}>Catalog</p>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "13px", fontWeight: 700, color: "#C4A93A", margin: 0 }}>{(skuAccess[profile.id] || new Set()).size} SKUs granted</p>
+                      </div>
                     </div>
 
-                    {/* Action buttons */}
                     <div style={{ display: "flex", gap: "10px" }}>
                       <button onClick={() => handleDeny(profile)} disabled={approving === profile.id} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "1px solid rgba(169,30,34,0.3)", padding: "10px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                         <XCircle size={13} /> Deny Access

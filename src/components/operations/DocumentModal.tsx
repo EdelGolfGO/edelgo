@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { X, Upload, Plus, Trash2, Calendar, FileText, ExternalLink } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { X, Upload, Plus, Trash2, Calendar, FileText, ExternalLink, Search, AlertTriangle } from "lucide-react"
 import { createClient } from "@/lib/supabase"
 
 type DocumentType = "po" | "factory_invoice" | "distributor_invoice"
@@ -10,8 +10,11 @@ type LineItem = {
   id: string
   product_name: string
   sku: string
+  sku_id?: string
   quantity: number
   unit_cost: number
+  supplier_code?: string
+  discount_percent?: number
 }
 
 type DocumentModalProps = {
@@ -19,8 +22,25 @@ type DocumentModalProps = {
   onClose: () => void
   onSave: (data: any) => void
   existingPOs?: { id: string; po_number: string }[]
-  editData?: any // pre-filled data for edit mode
-  editId?: string // record ID for update
+  editData?: any
+  editId?: string
+}
+
+type Factory = {
+  id: string
+  name: string
+  default_payment_terms?: string
+  default_shipment_method?: string
+}
+
+type SkuOption = {
+  id: string
+  sku_code: string
+  name: string
+  unit_cost: number | null
+  sku_type: string
+  factory_id: string | null
+  inventory?: { qty_on_hand: number; min_stock: number; max_stock: number } | null
 }
 
 const DEFAULT_FACTORY = "Virage Tech Industrial Co., Ltd."
@@ -35,11 +55,12 @@ const TYPE_CONFIG: Record<DocumentType, any> = {
     badgeBg: "rgba(169,30,34,0.1)",
     numberLabel: "PO Number",
     numberPlaceholder: "PO-2026-042",
-    partyLabel: "Factory Name",
+    partyLabel: "Factory",
     partyPlaceholder: DEFAULT_FACTORY,
     dateLabel: "Order Date",
     showExpectedShip: true,
     showLinkedPO: false,
+    showFactoryDropdown: true,
     amountLabel: "Total PO Amount",
     depositLabel: "50% Deposit — Due at PO Placement",
     finalLabel: "50% Final — Due 14 Days After Ship",
@@ -59,6 +80,7 @@ const TYPE_CONFIG: Record<DocumentType, any> = {
     dateLabel: "Invoice Date",
     showExpectedShip: false,
     showLinkedPO: true,
+    showFactoryDropdown: false,
     amountLabel: "Invoice Amount",
     depositLabel: "50% Deposit — Due at PO Placement",
     finalLabel: "50% Final — Due 14 Days After Ship",
@@ -78,6 +100,7 @@ const TYPE_CONFIG: Record<DocumentType, any> = {
     dateLabel: "Invoice Date",
     showExpectedShip: false,
     showLinkedPO: false,
+    showFactoryDropdown: false,
     amountLabel: "Invoice Amount",
     depositLabel: "50% Deposit — Due Day +14",
     finalLabel: "50% Final — Due 45 Days After Ship",
@@ -186,25 +209,99 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
 
+  const [factories, setFactories] = useState<Factory[]>([])
+  const [factoryId, setFactoryId] = useState(editData?.factory_id || "")
+  const [factorySkus, setFactorySkus] = useState<SkuOption[]>([])
+  const [skuSearch, setSkuSearch] = useState("")
+  const [lowStockOnly, setLowStockOnly] = useState(false)
+
   const [form, setForm] = useState({
     number: editData?.po_number || editData?.invoice_number || "",
     party: editData?.factory_name || editData?.dealer_name || (type === "po" || type === "factory_invoice" ? DEFAULT_FACTORY : ""),
     date: editData?.order_date || editData?.invoice_date || new Date().toISOString().split("T")[0],
     expected_ship_date: editData?.expected_ship_date || "",
+    required_by_date: editData?.required_by_date || "",
+    payment_terms: editData?.payment_terms || "50% PO",
+    shipment_method: editData?.shipment_method || "",
     total_amount: editData?.total_amount?.toString() || "",
     linked_po: editData?.linked_po_number || "",
     notes: editData?.notes || "",
   })
 
-  const [items, setItems] = useState<LineItem[]>([
-    { id: "1", product_name: "", sku: "", quantity: 0, unit_cost: 0 },
-  ])
+  const [items, setItems] = useState<LineItem[]>(
+    editData?.items?.length ? editData.items.map((i: any) => ({
+      id: i.id, product_name: i.product_name, sku: i.sku_code, sku_id: i.sku_id,
+      quantity: i.quantity, unit_cost: i.unit_cost, supplier_code: i.supplier_code, discount_percent: i.discount_percent,
+    })) : [{ id: "1", product_name: "", sku: "", quantity: 0, unit_cost: 0 }]
+  )
+
+  // Load factories for the dropdown (PO type only)
+  useEffect(() => {
+    if (!config.showFactoryDropdown) return
+    const supabase = createClient()
+    supabase.from("factories").select("id, name, default_payment_terms, default_shipment_method").eq("is_active", true).order("name")
+      .then(({ data }) => { if (data) setFactories(data) })
+  }, [])
+
+  // When a factory is selected, auto-fill its defaults and load its SKUs with live stock
+  useEffect(() => {
+    if (!factoryId) { setFactorySkus([]); return }
+    const supabase = createClient()
+
+    const factory = factories.find(f => f.id === factoryId)
+    if (factory) {
+      setForm(prev => ({
+        ...prev,
+        party: factory.name,
+        payment_terms: factory.default_payment_terms || prev.payment_terms,
+        shipment_method: factory.default_shipment_method || prev.shipment_method,
+      }))
+    }
+
+    supabase
+      .from("skus")
+      .select("id, sku_code, name, unit_cost, sku_type, factory_id, inventory:inventory(qty_on_hand, min_stock, max_stock)")
+      .eq("factory_id", factoryId)
+      .eq("is_active", true)
+      .order("sku_code")
+      .then(({ data }) => {
+        if (data) {
+          setFactorySkus(data.map((s: any) => ({ ...s, inventory: Array.isArray(s.inventory) ? s.inventory[0] : s.inventory })))
+        }
+      })
+  }, [factoryId, factories])
 
   function updateForm(key: string, value: string) { setForm(prev => ({ ...prev, [key]: value })) }
+
   function addItem() { setItems(prev => [...prev, { id: Date.now().toString(), product_name: "", sku: "", quantity: 0, unit_cost: 0 }]) }
   function updateItem(id: string, key: keyof LineItem, value: string | number) { setItems(prev => prev.map(item => item.id === id ? { ...item, [key]: value } : item)) }
   function removeItem(id: string) { setItems(prev => prev.filter(item => item.id !== id)) }
-  function getItemsTotal() { return items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0) }
+  function getItemsTotal() { return items.reduce((sum, item) => sum + item.quantity * item.unit_cost * (1 - (item.discount_percent || 0) / 100), 0) }
+
+  // Adds a SKU from the factory picker as a new line item, or bumps qty if already added.
+  // If the SKU is below its min_stock, suggests a reorder qty of (max_stock - qty_on_hand).
+  function addSkuAsLineItem(sku: SkuOption) {
+    const existing = items.find(i => i.sku_id === sku.id)
+    if (existing) {
+      updateItem(existing.id, "quantity", existing.quantity + 1)
+      return
+    }
+    const inv = sku.inventory
+    const isLowStock = inv && inv.qty_on_hand <= inv.min_stock
+    const suggestedQty = isLowStock && inv ? Math.max(inv.max_stock - inv.qty_on_hand, 1) : 1
+
+    setItems(prev => {
+      const cleaned = prev.filter(i => i.product_name || i.sku)
+      return [...cleaned, {
+        id: Date.now().toString(),
+        product_name: sku.name,
+        sku: sku.sku_code,
+        sku_id: sku.id,
+        quantity: suggestedQty,
+        unit_cost: sku.unit_cost || 0,
+      }]
+    })
+  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
@@ -226,24 +323,54 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
     setSaveError("")
     const supabase = createClient()
     const documentUrls = uploadedFiles.filter(f => f.url).map(f => ({ name: f.name, url: f.url }))
+    const validItems = items.filter(i => i.product_name || i.sku)
+    const computedTotal = getItemsTotal()
 
     try {
+      let docId = editId
+
       if (type === "po") {
         const payload = {
           po_number: form.number,
+          factory_id: factoryId || null,
           factory_name: form.party,
           order_date: form.date,
           expected_ship_date: form.expected_ship_date || null,
-          total_amount: parseFloat(form.total_amount) || 0,
+          required_by_date: form.required_by_date || null,
+          payment_terms: form.payment_terms || null,
+          shipment_method: form.shipment_method || null,
+          total_amount: parseFloat(form.total_amount) || computedTotal,
           notes: form.notes || null,
           document_urls: JSON.stringify(documentUrls),
         }
         if (isEdit) {
           const { error } = await supabase.from("purchase_orders").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", editId)
           if (error) throw error
+          docId = editId
         } else {
-          const { error } = await supabase.from("purchase_orders").insert({ ...payload, status: "placed", deposit_paid_date: form.date })
+          const { data, error } = await supabase.from("purchase_orders").insert({ ...payload, status: "placed" }).select("id").single()
           if (error) throw error
+          docId = data.id
+        }
+
+        // Persist line items — replace existing items for this PO with the current set.
+        if (docId) {
+          await supabase.from("purchase_order_items").delete().eq("po_id", docId)
+          if (validItems.length > 0) {
+            const { error: itemsError } = await supabase.from("purchase_order_items").insert(
+              validItems.map(item => ({
+                po_id: docId,
+                sku_id: item.sku_id || null,
+                sku_code: item.sku || null,
+                product_name: item.product_name,
+                quantity: item.quantity,
+                unit_cost: item.unit_cost,
+                supplier_code: item.supplier_code || null,
+                discount_percent: item.discount_percent || 0,
+              }))
+            )
+            if (itemsError) throw itemsError
+          }
         }
       }
 
@@ -267,7 +394,7 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
         }
       }
 
-      onSave({ form, items, uploadedFiles })
+      onSave({ form, items: validItems, uploadedFiles, docId })
     } catch (err: any) {
       setSaveError(err.message || "Error saving. Please try again.")
       setSaving(false)
@@ -277,9 +404,18 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
   const inputStyle = { width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const }
   const labelStyle = { display: "block" as const, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#9BA0A8", marginBottom: "6px" }
 
+  const filteredFactorySkus = factorySkus.filter(s => {
+    if (skuSearch && !s.sku_code.toLowerCase().includes(skuSearch.toLowerCase()) && !s.name.toLowerCase().includes(skuSearch.toLowerCase())) return false
+    if (lowStockOnly) {
+      const inv = s.inventory
+      if (!inv || inv.qty_on_hand > inv.min_stock) return false
+    }
+    return true
+  })
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: "20px" }} onClick={onClose}>
-      <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${config.eyebrowColor}`, width: "100%", maxWidth: "680px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
+      <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.10)", borderTop: `2px solid ${config.eyebrowColor}`, width: "100%", maxWidth: step === "items" && config.showFactoryDropdown ? "960px" : "680px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "20px 24px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", background: "#20242A", position: "sticky", top: 0, zIndex: 10 }}>
@@ -329,10 +465,30 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
                 <SmartDateInput label={config.dateLabel} value={form.date} onChange={v => updateForm("date", v)} />
               </div>
 
-              <div>
-                <label style={labelStyle}>{config.partyLabel}</label>
-                <input style={inputStyle} placeholder={config.partyPlaceholder} value={form.party} onChange={e => updateForm("party", e.target.value)} />
-              </div>
+              {config.showFactoryDropdown ? (
+                <div>
+                  <label style={labelStyle}>Factory</label>
+                  <select style={{ ...inputStyle, cursor: "pointer" }} value={factoryId} onChange={e => setFactoryId(e.target.value)}>
+                    <option value="">Select a factory...</option>
+                    {factories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                  </select>
+                  {factories.length === 0 && (
+                    <p style={{ fontSize: "11px", color: "#C4A93A", fontFamily: "'Barlow', sans-serif", marginTop: "6px" }}>
+                      No factories on file yet — add one under Operations → Factories to enable the SKU picker.
+                    </p>
+                  )}
+                  {!factoryId && factories.length > 0 && (
+                    <p style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif", marginTop: "6px" }}>
+                      Selecting a factory auto-fills its address/terms and lets you pick its SKUs directly in the next step.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label style={labelStyle}>{config.partyLabel}</label>
+                  <input style={inputStyle} placeholder={config.partyPlaceholder} value={form.party} onChange={e => updateForm("party", e.target.value)} />
+                </div>
+              )}
 
               {config.showLinkedPO && (
                 <div>
@@ -343,12 +499,28 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
               )}
 
               {config.showExpectedShip && (
-                <SmartDateInput label="Expected Ship Date" value={form.expected_ship_date} onChange={v => updateForm("expected_ship_date", v)} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <SmartDateInput label="Expected Ship Date" value={form.expected_ship_date} onChange={v => updateForm("expected_ship_date", v)} />
+                  <SmartDateInput label="Required By" value={form.required_by_date} onChange={v => updateForm("required_by_date", v)} />
+                </div>
+              )}
+
+              {type === "po" && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Terms</label>
+                    <input style={inputStyle} placeholder="50% PO" value={form.payment_terms} onChange={e => updateForm("payment_terms", e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Shipment Method</label>
+                    <input style={inputStyle} placeholder="DHL - Ship When Ready" value={form.shipment_method} onChange={e => updateForm("shipment_method", e.target.value)} />
+                  </div>
+                </div>
               )}
 
               <div>
-                <label style={labelStyle}>{config.amountLabel}</label>
-                <input type="number" style={inputStyle} placeholder="0.00" value={form.total_amount} onChange={e => updateForm("total_amount", e.target.value)} />
+                <label style={labelStyle}>{config.amountLabel} {type === "po" && <span style={{ color: "#666C75", textTransform: "none", letterSpacing: "normal" }}>(auto-filled from line items if left blank)</span>}</label>
+                <input type="number" style={inputStyle} placeholder={type === "po" ? getItemsTotal().toFixed(2) || "0.00" : "0.00"} value={form.total_amount} onChange={e => updateForm("total_amount", e.target.value)} />
               </div>
 
               {form.total_amount && parseFloat(form.total_amount) > 0 && (
@@ -384,31 +556,92 @@ export default function DocumentModal({ type, onClose, onSave, existingPOs = [],
           {/* STEP 2 */}
           {step === "items" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>Add the products on this {type === "distributor_invoice" ? "invoice" : type === "factory_invoice" ? "factory invoice" : "PO"}.</p>
-              <div style={{ background: "#23282E", border: "0.5px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 80px 100px 80px 32px" }}>
-                  {["Product", "SKU", "Qty", "Unit Cost", "Total", ""].map(h => (
-                    <div key={h} style={{ padding: "8px 12px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</div>
-                  ))}
-                </div>
-                {items.map(item => (
-                  <div key={item.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 80px 100px 80px 32px", borderBottom: "0.5px solid rgba(255,255,255,0.05)" }}>
-                    <input style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)" }} placeholder="Product name" value={item.product_name} onChange={e => updateItem(item.id, "product_name", e.target.value)} />
-                    <input style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)" }} placeholder="SKU" value={item.sku} onChange={e => updateItem(item.id, "sku", e.target.value)} />
-                    <input type="number" style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)", textAlign: "center" }} value={item.quantity || ""} onChange={e => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)} />
-                    <input type="number" style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)" }} placeholder="0.00" value={item.unit_cost || ""} onChange={e => updateItem(item.id, "unit_cost", parseFloat(e.target.value) || 0)} />
-                    <div style={{ padding: "9px 12px", fontSize: "13px", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", borderRight: "0.5px solid rgba(255,255,255,0.06)" }}>${(item.quantity * item.unit_cost).toFixed(0)}</div>
-                    <button onClick={() => removeItem(item.id)} style={{ background: "none", border: "none", color: "#666C75", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={13} /></button>
+
+              <div style={{ display: "grid", gridTemplateColumns: config.showFactoryDropdown && factoryId ? "320px 1fr" : "1fr", gap: "20px" }}>
+
+                {/* Factory SKU picker — only for POs with a factory selected */}
+                {config.showFactoryDropdown && factoryId && (
+                  <div style={{ background: "#23282E", border: "0.5px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", maxHeight: "440px" }}>
+                    <div style={{ padding: "12px", borderBottom: "0.5px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#8B919A", margin: "0 0 8px" }}>
+                        {factories.find(f => f.id === factoryId)?.name} SKUs ({factorySkus.length})
+                      </p>
+                      <div style={{ position: "relative", marginBottom: "8px" }}>
+                        <Search size={12} color="#787E87" style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)" }} />
+                        <input placeholder="Search SKUs..." value={skuSearch} onChange={e => setSkuSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: "26px", fontSize: "12px" }} />
+                      </div>
+                      <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+                        <input type="checkbox" checked={lowStockOnly} onChange={e => setLowStockOnly(e.target.checked)} style={{ cursor: "pointer" }} />
+                        <span style={{ fontSize: "11px", color: "#C4A93A", fontFamily: "'Barlow', sans-serif" }}>Low stock only</span>
+                      </label>
+                    </div>
+                    <div style={{ overflowY: "auto", flex: 1, padding: "6px" }}>
+                      {filteredFactorySkus.length === 0 ? (
+                        <p style={{ fontSize: "12px", color: "#666C75", fontFamily: "'Barlow', sans-serif", padding: "16px", textAlign: "center" }}>
+                          {factorySkus.length === 0 ? "No SKUs linked to this factory yet. Set \"Made At\" on SKUs in Inventory → SKUs." : "No SKUs match your filters."}
+                        </p>
+                      ) : filteredFactorySkus.map(sku => {
+                        const inv = sku.inventory
+                        const isLowStock = inv && inv.qty_on_hand <= inv.min_stock
+                        const alreadyAdded = items.some(i => i.sku_id === sku.id)
+                        return (
+                          <div key={sku.id} onClick={() => addSkuAsLineItem(sku)}
+                            style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 10px", cursor: "pointer", background: alreadyAdded ? "rgba(169,30,34,0.08)" : "transparent", border: `0.5px solid ${alreadyAdded ? "rgba(169,30,34,0.25)" : "transparent"}`, marginBottom: "2px" }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: alreadyAdded ? "#A91E22" : "#E0E2E6", margin: 0 }}>{sku.sku_code}</p>
+                              <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "1px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sku.name}</p>
+                            </div>
+                            {isLowStock && (
+                              <div title="Below minimum stock" style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
+                                <AlertTriangle size={11} color="#C4A93A" />
+                                <span style={{ fontSize: "10px", color: "#C4A93A", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}>{inv!.qty_on_hand}</span>
+                              </div>
+                            )}
+                            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, color: "#8B919A", flexShrink: 0 }}>
+                              {sku.unit_cost ? `$${sku.unit_cost.toFixed(2)}` : "—"}
+                            </span>
+                            <div style={{ width: "18px", height: "18px", background: alreadyAdded ? "#A91E22" : "#3A3F47", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <Plus size={11} color="#fff" />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                ))}
-                <div style={{ padding: "10px 12px" }}>
-                  <button onClick={addItem} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}><Plus size={12} /> Add Line Item</button>
+                )}
+
+                {/* Line items table */}
+                <div>
+                  <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: "0 0 12px" }}>
+                    {config.showFactoryDropdown && factoryId ? "Click SKUs on the left to add them, or edit manually below." : `Add the products on this ${type === "distributor_invoice" ? "invoice" : type === "factory_invoice" ? "factory invoice" : "PO"}.`}
+                  </p>
+                  <div style={{ background: "#23282E", border: "0.5px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 70px 90px 80px 32px" }}>
+                      {["Product", "SKU", "Qty", "Unit Cost", "Total", ""].map(h => (
+                        <div key={h} style={{ padding: "8px 10px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}>{h}</div>
+                      ))}
+                    </div>
+                    {items.map(item => (
+                      <div key={item.id} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 70px 90px 80px 32px", borderBottom: "0.5px solid rgba(255,255,255,0.05)" }}>
+                        <input style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)", fontSize: "12px" }} placeholder="Product name" value={item.product_name} onChange={e => updateItem(item.id, "product_name", e.target.value)} />
+                        <input style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)", fontSize: "12px" }} placeholder="SKU" value={item.sku} onChange={e => updateItem(item.id, "sku", e.target.value)} />
+                        <input type="number" style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)", textAlign: "center", fontSize: "12px" }} value={item.quantity || ""} onChange={e => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)} />
+                        <input type="number" style={{ ...inputStyle, border: "none", borderRight: "0.5px solid rgba(255,255,255,0.06)", fontSize: "12px" }} placeholder="0.00" value={item.unit_cost || ""} onChange={e => updateItem(item.id, "unit_cost", parseFloat(e.target.value) || 0)} />
+                        <div style={{ padding: "9px 10px", fontSize: "13px", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", borderRight: "0.5px solid rgba(255,255,255,0.06)" }}>${(item.quantity * item.unit_cost).toFixed(0)}</div>
+                        <button onClick={() => removeItem(item.id)} style={{ background: "none", border: "none", color: "#666C75", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={13} /></button>
+                      </div>
+                    ))}
+                    <div style={{ padding: "10px 12px" }}>
+                      <button onClick={addItem} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}><Plus size={12} /> Add Line Item Manually</button>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "16px", padding: "12px 0", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#9BA0A8" }}>Line Items Total</span>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: "#fff" }}>${getItemsTotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "16px", padding: "12px 0", borderTop: "0.5px solid rgba(255,255,255,0.08)" }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#9BA0A8" }}>Line Items Total</span>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "24px", fontWeight: 700, color: "#fff" }}>${getItemsTotal().toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-              </div>
+
               <div style={{ display: "flex", gap: "10px" }}>
                 <button onClick={() => setStep("details")} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#9BA0A8", background: "transparent", border: "1px solid #666C75", padding: "10px 20px", cursor: "pointer" }}>← Back</button>
                 <button onClick={() => setStep("upload")} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: config.eyebrowColor, border: "none", padding: "10px", cursor: "pointer" }}>Next: Documents →</button>

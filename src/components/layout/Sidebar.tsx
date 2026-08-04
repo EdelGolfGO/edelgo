@@ -8,7 +8,7 @@ import {
   LayoutDashboard, ClipboardList, Plus, Clock,
   List, Package, Building2, Users, BarChart2, Settings, FileText,
   Briefcase, FileCheck, Calendar, Bell, TrendingDown, GitBranch, Upload,
-  UserCheck,
+  UserCheck, Hammer, Factory,
 } from "lucide-react"
 
 export default function Sidebar() {
@@ -16,19 +16,22 @@ export default function Sidebar() {
   const [pendingCount, setPendingCount] = useState(0)
   const [notifCount, setNotifCount] = useState(0)
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
+  const [activeWorkOrdersCount, setActiveWorkOrdersCount] = useState(0)
 
   useEffect(() => { loadCounts() }, [])
 
   async function loadCounts() {
     const supabase = createClient()
-    const [pendingResult, notifResult, pendingOrdersResult] = await Promise.all([
+    const [pendingResult, notifResult, pendingOrdersResult, workOrdersResult] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact" }).eq("role", "dealer").eq("is_approved", false),
       supabase.from("portal_notifications").select("id", { count: "exact" }).eq("is_read", false),
       supabase.from("b2b_orders").select("id", { count: "exact" }).eq("status", "pending"),
+      supabase.from("work_orders").select("id", { count: "exact" }).in("status", ["pending", "in_production"]),
     ])
     setPendingCount(pendingResult.count || 0)
     setNotifCount((notifResult.count || 0) + (pendingOrdersResult.count || 0))
     setPendingOrdersCount(pendingOrdersResult.count || 0)
+    setActiveWorkOrdersCount(workOrdersResult.count || 0)
   }
 
   const nav = [
@@ -42,7 +45,9 @@ export default function Sidebar() {
       { label: "Drafts", href: "/orders/drafts", icon: FileText },
     ]},
     { section: "Operations", items: [
+      { label: "Work Orders", href: "/operations/work-orders", icon: Hammer, badge: activeWorkOrdersCount },
       { label: "PO Tracker", href: "/operations/pos", icon: Briefcase },
+      { label: "Factories", href: "/operations/factories", icon: Factory },
       { label: "Invoices", href: "/operations/invoices", icon: FileCheck },
       { label: "Calendar", href: "/operations/calendar", icon: Calendar },
       { label: "Alerts", href: "/operations/alerts", icon: Bell, badge: notifCount },
@@ -54,7 +59,7 @@ export default function Sidebar() {
       { label: "SKUs", href: "/inventory/skus", icon: List },
       { label: "Shopify Import", href: "/inventory/import", icon: Upload },
       { label: "Pricing Tiers", href: "/inventory/pricing", icon: BarChart2 },
-      { label: "COGS Calculator", href: "/inventory/cogs", icon: BarChart2 },
+      { label: "Sales History", href: "/inventory/cogs", icon: BarChart2 },
     ]},
     { section: "Accounts", items: [
       { label: "Dealers", href: "/dealers", icon: Building2 },

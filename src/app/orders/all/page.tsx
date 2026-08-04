@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, ChevronDown, Search, Pencil, Printer, X, Save } from "lucide-react"
+import { Plus, ChevronDown, Search, Pencil, Printer, X, Save, Upload, FileText, ExternalLink } from "lucide-react"
+import MessageThread from "@/components/dealers/MessageThread"
 import { createClient } from "@/lib/supabase"
 
 type OrderStatus = "draft" | "pending" | "pending_review" | "approved" | "in_production" | "shipped" | "fulfilled" | "cancelled"
@@ -19,6 +20,16 @@ type OrderItem = {
 
 type OrderType = "all" | "wholesale" | "fitter" | "retail" | "international" | "factory" | "misc"
 
+type OrderDoc = {
+  id: string
+  order_id: string
+  name: string
+  url: string
+  category: string
+  visible_to_dealer: boolean
+  uploaded_at: string
+}
+
 type Order = {
   id: string
   order_number: string
@@ -31,8 +42,10 @@ type Order = {
   submitted_at: string
   approved_at: string
   shipped_at: string
+  estimated_ship_date?: string | null
   created_at: string
   items: OrderItem[]
+  dealer?: { fulfillment_source: string } | null
 }
 
 const STATUS_COLORS: Record<OrderStatus, { color: string; bg: string; label: string }> = {
@@ -44,6 +57,22 @@ const STATUS_COLORS: Record<OrderStatus, { color: string; bg: string; label: str
   shipped:        { color: "#7AAB6A", bg: "rgba(122,171,106,0.1)",  label: "Shipped" },
   fulfilled:      { color: "#5A9E5A", bg: "rgba(90,158,90,0.1)",    label: "Fulfilled" },
   cancelled:      { color: "#A91E22", bg: "rgba(169,30,34,0.1)",    label: "Cancelled" },
+}
+
+const ORDER_DOC_CATEGORIES = [
+  { value: "coo", label: "Certificate of Origin (COO)" },
+  { value: "commercial_invoice", label: "Commercial Invoice (CI)" },
+  { value: "packing_list", label: "Packing List" },
+  { value: "customs", label: "Other Customs Doc" },
+  { value: "other", label: "Other" },
+]
+
+const ORDER_DOC_COLORS: Record<string, { color: string; bg: string }> = {
+  coo: { color: "#C4A93A", bg: "rgba(196,169,58,0.1)" },
+  commercial_invoice: { color: "#6A9CC8", bg: "rgba(106,156,200,0.1)" },
+  packing_list: { color: "#5A9E5A", bg: "rgba(90,158,90,0.1)" },
+  customs: { color: "#A91E22", bg: "rgba(169,30,34,0.1)" },
+  other: { color: "#8B919A", bg: "rgba(255,255,255,0.06)" },
 }
 
 function formatDate(dateStr: string) {
@@ -102,6 +131,7 @@ function printOrder(order: Order) {
 export default function AllOrdersPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
+  const [docsByOrder, setDocsByOrder] = useState<Record<string, OrderDoc[]>>({})
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [filter, setFilter] = useState<OrderStatus | "all">("all")
@@ -110,26 +140,191 @@ export default function AllOrdersPage() {
   const [editModal, setEditModal] = useState<Order | null>(null)
   const [editItems, setEditItems] = useState<OrderItem[]>([])
   const [editNotes, setEditNotes] = useState("")
+  const [estimatedShipDate, setEstimatedShipDate] = useState("")
   const [saving, setSaving] = useState(false)
   const [notifyDealer, setNotifyDealer] = useState(true)
   const [changeReason, setChangeReason] = useState("")
+  const [uploadingDocsFor, setUploadingDocsFor] = useState<string | null>(null)
+  const [docUploadCategory, setDocUploadCategory] = useState("coo")
+  const [shipBackflushConfirm, setShipBackflushConfirm] = useState<Order | null>(null)
 
   useEffect(() => { loadOrders() }, [])
 
   async function loadOrders() {
     setLoading(true)
     const supabase = createClient()
-    const { data } = await supabase
-      .from("b2b_orders")
-      .select(`
-        *,
-        items:b2b_order_items(
-          id, sku_code, product_name, quantity, unit_price, total_price, configuration
-        )
-      `)
-      .order("created_at", { ascending: false })
+    const [{ data }, { data: docsData }] = await Promise.all([
+      supabase
+        .from("b2b_orders")
+        .select(`
+          *,
+          items:b2b_order_items(
+            id, sku_code, product_name, quantity, unit_price, total_price, configuration
+          ),
+          dealer:dealers(fulfillment_source)
+        `)
+        .order("created_at", { ascending: false }),
+      supabase.from("order_documents").select("*").order("uploaded_at", { ascending: false }),
+    ])
     if (data) setOrders(data as any)
+    if (docsData) {
+      const grouped: Record<string, OrderDoc[]> = {}
+      docsData.forEach((d: any) => {
+        if (!grouped[d.order_id]) grouped[d.order_id] = []
+        grouped[d.order_id].push(d)
+      })
+      setDocsByOrder(grouped)
+    }
     setLoading(false)
+  }
+
+  // Maps a freeform configuration value (e.g. "KBS Tour V - Wedge 125g") to a
+  // real component SKU by fuzzy name match — same approach as the Shopify
+  // order webhook, since dealer order configuration data is the same kind of
+  // freeform display text rather than SKU codes.
+  async function findComponentByName(supabase: any, nameFragment: string) {
+    const { data } = await supabase
+      .from("skus")
+      .select("id, sku_code, name")
+      .eq("is_active", true)
+      .in("sku_type", ["component", "consumable"])
+      .ilike("name", `%${nameFragment}%`)
+      .limit(1)
+    return data && data.length > 0 ? data[0] : null
+  }
+
+  const SPEC_KEYS = new Set(["Hand", "Lie Angle", "Length"])
+  const COMPONENT_KEYS = new Set(["Shaft", "Grip", "Ferrule", "Edel x BB&F Ferrule"])
+
+  // Creates Work Orders for any customizable line items on a dealer order,
+  // run when the order is approved. Non-customizable line items on the same
+  // order are recorded as companion items so shipping can coordinate them
+  // alongside whatever custom builds came from the same order.
+  async function createWorkOrdersForOrder(order: Order) {
+    const supabase = createClient()
+    const stockLineItems: { sku_code: string; sku_name: string; quantity: number }[] = []
+    const createdWorkOrderIds: string[] = []
+
+    for (const item of order.items || []) {
+      const skuCode = (item.sku_code || "").trim()
+      if (!skuCode) continue
+
+      const skuSelect = "id, sku_code, name, is_customizable, generic_parent_sku_id, generic_parent:skus!generic_parent_sku_id(id, sku_code, name, is_customizable)"
+      let { data: sku } = await supabase.from("skus").select(skuSelect).eq("sku_code", skuCode).single()
+      if (!sku) {
+        const fallback = await supabase.from("skus").select(skuSelect).eq("shopify_sku_code", skuCode).single()
+        if (fallback.data) sku = fallback.data
+      }
+
+      if (!sku) continue
+
+      const genericParent = (sku as any).generic_parent
+      const buildTarget = genericParent?.is_customizable ? genericParent : (sku.is_customizable ? sku : null)
+
+      if (!buildTarget) {
+        stockLineItems.push({ sku_code: sku.sku_code, sku_name: sku.name, quantity: item.quantity || 1 })
+        continue
+      }
+
+      const specNotes: string[] = []
+      const componentMatches: { component_sku_id: string }[] = []
+
+      if (genericParent?.is_customizable && sku.id !== buildTarget.id) {
+        componentMatches.push({ component_sku_id: sku.id })
+      }
+
+      const configuration = item.configuration || {}
+      for (const [key, value] of Object.entries(configuration)) {
+        if (!value) continue
+        if (SPEC_KEYS.has(key)) {
+          specNotes.push(`${key}: ${value}`)
+        } else if (COMPONENT_KEYS.has(key)) {
+          const match = await findComponentByName(supabase, value as string)
+          if (match) {
+            componentMatches.push({ component_sku_id: match.id })
+          } else {
+            specNotes.push(`${key}: ${value} (no matching component SKU found — needs manual review)`)
+          }
+        }
+      }
+
+      const { data: newWO } = await supabase
+        .from("work_orders")
+        .insert({
+          sales_order_reference: order.order_number,
+          sku_id: buildTarget.id,
+          customer_name: order.dealer_name,
+          status: "pending",
+          source: "dealer",
+          notes: specNotes.length > 0 ? specNotes.join(" · ") : null,
+        })
+        .select()
+        .single()
+
+      if (newWO) {
+        createdWorkOrderIds.push(newWO.id)
+        if (componentMatches.length > 0) {
+          await supabase.from("work_order_items").insert(
+            componentMatches.map(m => ({ work_order_id: newWO.id, component_sku_id: m.component_sku_id, quantity: 1 }))
+          )
+        }
+      }
+    }
+
+    if (stockLineItems.length > 0 && createdWorkOrderIds.length > 0) {
+      const companionRows = createdWorkOrderIds.flatMap(woId =>
+        stockLineItems.map(item => ({
+          work_order_id: woId,
+          sku_code: item.sku_code,
+          sku_name: item.sku_name,
+          quantity: item.quantity,
+        }))
+      )
+      await supabase.from("work_order_companion_items").insert(companionRows)
+    }
+  }
+
+  // Backflush domestic component inventory for an order's line items by
+  // decomposing each sold SKU through its active BoM — the same approach as
+  // Work Order backflush, since we don't know which specific components a
+  // dealer's stock build consumed until the order is placed. Drop-ship
+  // dealers (Korea/other) never call this — their orders don't touch
+  // domestic inventory at all.
+  async function backflushOrderInventory(order: Order) {
+    const supabase = createClient()
+    for (const item of order.items || []) {
+      const skuCode = (item.sku_code || "").trim()
+      if (!skuCode) continue
+
+      let { data: sku } = await supabase.from("skus").select("id").eq("sku_code", skuCode).single()
+      if (!sku) {
+        const fallback = await supabase.from("skus").select("id").eq("shopify_sku_code", skuCode).single()
+        if (fallback.data) sku = fallback.data
+      }
+      if (!sku) continue
+
+      const { data: bomHeader } = await supabase.from("bom_headers").select("id").eq("sku_id", sku.id).eq("is_active", true).single()
+      if (!bomHeader) continue // no BoM defined — nothing to backflush for this line item
+
+      const { data: bomItems } = await supabase.from("bom_items").select("component_sku_id, quantity").eq("bom_id", bomHeader.id)
+      for (const bomItem of bomItems || []) {
+        if (!bomItem.component_sku_id) continue
+        const totalDeduct = bomItem.quantity * item.quantity
+        const { data: inv } = await supabase.from("inventory").select("id, qty_on_hand").eq("sku_id", bomItem.component_sku_id).single()
+        if (inv) {
+          await supabase.from("inventory").update({
+            qty_on_hand: Math.max(0, inv.qty_on_hand - totalDeduct),
+            updated_at: new Date().toISOString(),
+          }).eq("id", inv.id)
+        }
+      }
+    }
+  }
+
+  async function handleShipAndBackflushOrder(order: Order) {
+    await backflushOrderInventory(order)
+    await updateStatus(order.id, "shipped")
+    setShipBackflushConfirm(null)
   }
 
   async function updateStatus(id: string, status: OrderStatus) {
@@ -140,6 +335,11 @@ export default function AllOrdersPage() {
     await supabase.from("b2b_orders").update({ status, ...extra }).eq("id", id)
 
     const order = orders.find(o => o.id === id)
+
+    if (status === "approved" && order) {
+      await createWorkOrdersForOrder(order)
+    }
+
     if (order?.dealer_id) {
       await supabase.from("portal_notifications").insert({
         type: "order_status_update",
@@ -157,6 +357,7 @@ export default function AllOrdersPage() {
     setEditModal(order)
     setEditItems(order.items.map(i => ({ ...i })))
     setEditNotes(order.notes || "")
+    setEstimatedShipDate((order as any).estimated_ship_date || "")
     setChangeReason("")
     setNotifyDealer(true)
   }
@@ -195,6 +396,7 @@ export default function AllOrdersPage() {
     const newTotal = editItems.reduce((sum, i) => sum + i.unit_price * i.quantity, 0)
     await supabase.from("b2b_orders").update({
       notes: editNotes,
+      estimated_ship_date: estimatedShipDate || null,
       total_amount: newTotal,
       updated_at: new Date().toISOString(),
     }).eq("id", editModal.id)
@@ -214,6 +416,44 @@ export default function AllOrdersPage() {
 
     setSaving(false)
     setEditModal(null)
+    loadOrders()
+  }
+
+  // Uploads a customs/clearance document tied to a specific order. Visible to
+  // the dealer in their portal immediately (visible_to_dealer defaults true) —
+  // toggle this off first if you want to review internally before releasing it.
+  async function handleOrderDocUpload(order: Order, e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    setUploadingDocsFor(order.id)
+    const supabase = createClient()
+    for (const file of files) {
+      const path = `orders/${order.id}/${Date.now()}-${file.name.replace(/\s/g, "_")}`
+      const { error } = await supabase.storage.from("Documents").upload(path, file, { upsert: true })
+      if (!error) {
+        const { data: urlData } = supabase.storage.from("Documents").getPublicUrl(path)
+        await supabase.from("order_documents").insert({
+          order_id: order.id,
+          name: file.name,
+          url: urlData.publicUrl,
+          category: docUploadCategory,
+          visible_to_dealer: true,
+        })
+      }
+    }
+    setUploadingDocsFor(null)
+    loadOrders()
+  }
+
+  async function toggleDocVisibility(doc: OrderDoc) {
+    const supabase = createClient()
+    await supabase.from("order_documents").update({ visible_to_dealer: !doc.visible_to_dealer }).eq("id", doc.id)
+    loadOrders()
+  }
+
+  async function deleteOrderDoc(doc: OrderDoc) {
+    const supabase = createClient()
+    await supabase.from("order_documents").delete().eq("id", doc.id)
     loadOrders()
   }
 
@@ -329,6 +569,7 @@ export default function AllOrdersPage() {
           {filtered.map(order => {
             const isExpanded = expanded === order.id
             const statusInfo = STATUS_COLORS[order.status] || STATUS_COLORS.pending_review
+            const orderDocs = docsByOrder[order.id] || []
 
             return (
               <div key={order.id} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)" }}>
@@ -352,6 +593,15 @@ export default function AllOrdersPage() {
                       <p style={{ fontSize: "9px", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 2px" }}>Items</p>
                       <p style={{ fontSize: "12px", color: "#AAA", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{(order.items || []).length} line item{(order.items || []).length !== 1 ? "s" : ""}</p>
                     </div>
+                    {orderDocs.length > 0 && (
+                      <div>
+                        <p style={{ fontSize: "9px", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 2px" }}>Docs</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+                          <FileText size={11} color="#5A9E5A" />
+                          <span style={{ fontSize: "12px", color: "#5A9E5A", fontFamily: "'Barlow', sans-serif" }}>{orderDocs.length}</span>
+                        </div>
+                      </div>
+                    )}
                     {order.approved_at && (
                       <div>
                         <p style={{ fontSize: "9px", color: "#787E87", fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 2px" }}>Approved</p>
@@ -405,6 +655,68 @@ export default function AllOrdersPage() {
 
                     {order.notes && <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", marginBottom: "16px", fontStyle: "italic" }}>Note: {order.notes}</p>}
 
+                    {/* Order documents — customs/clearance, visible to dealer in their portal */}
+                    <div style={{ marginBottom: "16px", background: "#262B32", border: "0.5px solid rgba(255,255,255,0.08)", padding: "14px 16px" }}>
+                      <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "10px" }}>
+                        Customs &amp; Order Documents
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "0 0 12px" }}>
+                        Documents marked visible appear in this dealer's portal immediately — useful for COO/CI on international orders to avoid customs delays.
+                      </p>
+
+                      <div style={{ display: "flex", gap: "10px", marginBottom: "12px", alignItems: "center" }} onClick={e => e.stopPropagation()}>
+                        <select value={docUploadCategory} onChange={e => setDocUploadCategory(e.target.value)} style={{ ...inputStyle, width: "220px", cursor: "pointer" }}>
+                          {ORDER_DOC_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
+                        <label style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#6A9CC8", border: "none", padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <input type="file" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls" multiple onChange={e => handleOrderDocUpload(order, e)} style={{ display: "none" }} />
+                          <Upload size={12} /> {uploadingDocsFor === order.id ? "Uploading..." : "Upload Document"}
+                        </label>
+                      </div>
+
+                      {orderDocs.length === 0 ? (
+                        <p style={{ fontSize: "12px", color: "#666C75", fontFamily: "'Barlow', sans-serif", fontStyle: "italic" }}>No documents uploaded for this order yet</p>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }} onClick={e => e.stopPropagation()}>
+                          {orderDocs.map(doc => {
+                            const catStyle = ORDER_DOC_COLORS[doc.category] || ORDER_DOC_COLORS.other
+                            return (
+                              <div key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.08)", padding: "9px 14px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <FileText size={13} color={catStyle.color} />
+                                  <span style={{ fontSize: "12px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif" }}>{doc.name}</span>
+                                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: catStyle.color, background: catStyle.bg, padding: "2px 7px" }}>
+                                    {ORDER_DOC_CATEGORIES.find(c => c.value === doc.category)?.label}
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                                  <button onClick={() => toggleDocVisibility(doc)}
+                                    title={doc.visible_to_dealer ? "Visible to dealer — click to hide" : "Hidden from dealer — click to show"}
+                                    style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: doc.visible_to_dealer ? "#5A9E5A" : "#787E87", background: doc.visible_to_dealer ? "rgba(90,158,90,0.1)" : "rgba(255,255,255,0.06)", border: "none", padding: "3px 8px", cursor: "pointer" }}>
+                                    {doc.visible_to_dealer ? "Visible to Dealer" : "Hidden"}
+                                  </button>
+                                  <a href={doc.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: "4px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6A9CC8", textDecoration: "none" }}>
+                                    <ExternalLink size={12} /> Open
+                                  </a>
+                                  <button onClick={() => deleteOrderDoc(doc)} style={{ background: "none", border: "none", color: "#666C75", cursor: "pointer", display: "flex" }}><X size={14} /></button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Per-order message thread with the dealer */}
+                    {order.dealer_id && (
+                      <div style={{ marginBottom: "16px" }} onClick={e => e.stopPropagation()}>
+                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "10px" }}>
+                          Messages — {order.dealer_name}
+                        </p>
+                        <MessageThread dealerId={order.dealer_id} orderId={order.id} currentUserRole="admin" compact />
+                      </div>
+                    )}
+
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
                       {isPending(order) && (
                         <button onClick={() => updateStatus(order.id, "approved")}
@@ -419,10 +731,17 @@ export default function AllOrdersPage() {
                         </button>
                       )}
                       {order.status === "in_production" && (
-                        <button onClick={() => updateStatus(order.id, "shipped")}
-                          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#6A9CC8", border: "none", padding: "7px 14px", cursor: "pointer" }}>
-                          Mark Shipped
-                        </button>
+                        order.dealer?.fulfillment_source === "drop_ship" ? (
+                          <button onClick={() => updateStatus(order.id, "shipped")}
+                            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#6A9CC8", border: "none", padding: "7px 14px", cursor: "pointer" }}>
+                            Mark Shipped
+                          </button>
+                        ) : (
+                          <button onClick={() => setShipBackflushConfirm(order)}
+                            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#5A9E5A", border: "none", padding: "7px 14px", cursor: "pointer" }}>
+                            Ship & Backflush
+                          </button>
+                        )
                       )}
                       {order.status === "shipped" && (
                         <button onClick={() => updateStatus(order.id, "fulfilled")}
@@ -498,6 +817,10 @@ export default function AllOrdersPage() {
               </div>
 
               <div>
+                <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "6px" }}>Estimated Ship Date</p>
+                <input type="date" value={estimatedShipDate} onChange={e => setEstimatedShipDate(e.target.value)} style={{ width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", boxSizing: "border-box" as const, marginBottom: "16px" }} />
+                <p style={{ fontSize: "11px", color: "#787E87", fontFamily: "'Barlow', sans-serif", margin: "-12px 0 0 0", marginBottom: "16px" }}>Shown to the dealer in their portal once set.</p>
+
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "6px" }}>Order Notes</p>
                 <textarea style={{ width: "100%", background: "#23282E", border: "0.5px solid rgba(255,255,255,0.12)", color: "#fff", padding: "8px 10px", fontSize: "12px", fontFamily: "'Barlow', sans-serif", outline: "none", resize: "none", minHeight: "60px", boxSizing: "border-box" as const }} value={editNotes} onChange={e => setEditNotes(e.target.value)} />
               </div>
@@ -521,6 +844,34 @@ export default function AllOrdersPage() {
                   <Save size={14} /> {saving ? "Saving..." : "Save Changes →"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Ship & Backflush confirmation — domestic-stock dealer orders only */}
+      {shipBackflushConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400 }} onClick={() => setShipBackflushConfirm(null)}>
+          <div style={{ background: "#2B3038", border: "0.5px solid rgba(255,255,255,0.14)", borderTop: "2px solid #5A9E5A", padding: "32px", width: "440px" }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "20px", fontWeight: 700, textTransform: "uppercase", color: "#fff", margin: "0 0 8px" }}>Ship & Backflush?</h2>
+            <p style={{ fontSize: "13px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: "0 0 6px" }}>
+              This will deduct domestic component inventory for every line item on order <strong style={{ color: "#fff" }}>{shipBackflushConfirm.order_number}</strong> (decomposed through each product's BoM) and mark it <strong style={{ color: "#fff" }}>Shipped</strong>.
+            </p>
+            <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "0 0 20px" }}>This cannot be undone automatically — make sure the order is actually complete and shipping.</p>
+            <div style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.10)", padding: "12px", marginBottom: "20px" }}>
+              {(shipBackflushConfirm.items || []).map(item => (
+                <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontFamily: "'Barlow', sans-serif", color: "#B5BAC2", padding: "3px 0" }}>
+                  <span>{item.sku_code} — {item.product_name}</span>
+                  <span>× {item.quantity}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: "11px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: "0 0 16px", fontStyle: "italic" }}>
+              Component-level deduction will be calculated from each product's active BoM at the moment you confirm.
+            </p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => setShipBackflushConfirm(null)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8B919A", background: "transparent", border: "1px solid #3A3F47", padding: "10px", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => handleShipAndBackflushOrder(shipBackflushConfirm)} style={{ flex: 1, fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: "#5A9E5A", border: "none", padding: "10px", cursor: "pointer" }}>Ship & Backflush</button>
             </div>
           </div>
         </div>

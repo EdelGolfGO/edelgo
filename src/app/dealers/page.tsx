@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Plus, X, ChevronDown, Mail, Phone, MapPin, CreditCard, Pencil, Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase"
+import DealerSkuAccessPicker from "@/components/dealers/DealerSkuAccessPicker"
+import MessageThread from "@/components/dealers/MessageThread"
 
 type Dealer = {
   id: string
@@ -41,7 +43,7 @@ const TYPE_COLORS: Record<string, { color: string; bg: string }> = {
 const emptyForm = {
   name: "", company: "", email: "", phone: "",
   address_line1: "", address_line2: "", city: "", state: "", zip: "", country: "US",
-  dealer_type: "wholesale", status: "active", payment_terms: "net30",
+  dealer_type: "wholesale", status: "active", payment_terms: "net30", fulfillment_source: "domestic",
   credit_limit: "", discount_percent: "", tax_exempt: false, tax_id: "", notes: "",
 }
 
@@ -53,9 +55,17 @@ export default function DealersPage() {
   const [form, setForm] = useState<any>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<Record<string, "details" | "catalog" | "messages">>({})
   const [filter, setFilter] = useState("all")
   const [deleteConfirm, setDeleteConfirm] = useState<Dealer | null>(null)
   const [search, setSearch] = useState("")
+
+  // Catalog access state per dealer — loaded lazily when a dealer's Catalog
+  // tab is opened, since pulling every dealer's access list up front would
+  // be wasteful for a list that may have many dealers.
+  const [accessByDealer, setAccessByDealer] = useState<Record<string, Set<string>>>({})
+  const [accessLoaded, setAccessLoaded] = useState<Record<string, boolean>>({})
+  const [accessSaving, setAccessSaving] = useState<string | null>(null)
 
   useEffect(() => { loadDealers() }, [])
 
@@ -65,6 +75,29 @@ export default function DealersPage() {
     const { data } = await supabase.from("dealers").select("*").order("name")
     if (data) setDealers(data)
     setLoading(false)
+  }
+
+  async function loadAccessForDealer(dealerId: string) {
+    if (accessLoaded[dealerId]) return
+    const supabase = createClient()
+    const { data } = await supabase.from("dealer_sku_access").select("sku_id").eq("dealer_id", dealerId)
+    setAccessByDealer(prev => ({ ...prev, [dealerId]: new Set((data || []).map((r: any) => r.sku_id)) }))
+    setAccessLoaded(prev => ({ ...prev, [dealerId]: true }))
+  }
+
+  async function saveAccessForDealer(dealerId: string) {
+    setAccessSaving(dealerId)
+    const supabase = createClient()
+    const ids = Array.from(accessByDealer[dealerId] || new Set())
+
+    // Replace the dealer's full access list — delete everything, then
+    // re-insert the current selection. Simpler and safer than diffing,
+    // and access lists are small enough that this is cheap.
+    await supabase.from("dealer_sku_access").delete().eq("dealer_id", dealerId)
+    if (ids.length > 0) {
+      await supabase.from("dealer_sku_access").insert(ids.map(skuId => ({ dealer_id: dealerId, sku_id: skuId })))
+    }
+    setAccessSaving(null)
   }
 
   function openNew() {
@@ -87,6 +120,7 @@ export default function DealersPage() {
       country: dealer.country || "US",
       dealer_type: dealer.dealer_type || "wholesale",
       status: dealer.status || "active",
+      fulfillment_source: (dealer as any).fulfillment_source || "domestic",
       payment_terms: dealer.payment_terms || "net30",
       credit_limit: dealer.credit_limit?.toString() || "",
       discount_percent: dealer.discount_percent?.toString() || "",
@@ -96,6 +130,13 @@ export default function DealersPage() {
     })
     setEditId(dealer.id)
     setModal(true)
+  }
+
+  async function toggleFulfillmentSource(dealer: Dealer) {
+    const supabase = createClient()
+    const next = (dealer as any).fulfillment_source === "drop_ship" ? "domestic" : "drop_ship"
+    await supabase.from("dealers").update({ fulfillment_source: next, updated_at: new Date().toISOString() }).eq("id", dealer.id)
+    loadDealers()
   }
 
   async function handleSave() {
@@ -122,6 +163,12 @@ export default function DealersPage() {
     await supabase.from("dealers").delete().eq("id", dealer.id)
     setDeleteConfirm(null)
     loadDealers()
+  }
+
+  function toggleExpand(dealer: Dealer) {
+    const next = expanded === dealer.id ? null : dealer.id
+    setExpanded(next)
+    if (next) loadAccessForDealer(dealer.id)
   }
 
   const filtered = dealers.filter(d => {
@@ -189,9 +236,12 @@ export default function DealersPage() {
           {filtered.map(dealer => {
             const tc = TYPE_COLORS[dealer.dealer_type] || TYPE_COLORS.wholesale
             const isExpanded = expanded === dealer.id
+            const tab = activeTab[dealer.id] || "details"
+            const access = accessByDealer[dealer.id] || new Set()
+
             return (
               <div key={dealer.id} style={{ background: "#2E343C", border: "0.5px solid rgba(255,255,255,0.10)", borderLeft: `3px solid ${tc.color}` }}>
-                <div onClick={() => setExpanded(isExpanded ? null : dealer.id)} style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}>
+                <div onClick={() => toggleExpand(dealer)} style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}>
                   <div style={{ flex: "0 0 200px" }}>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "14px", fontWeight: 700, color: "#fff", margin: 0 }}>{dealer.name}</p>
                     {dealer.company && <p style={{ fontSize: "11px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "2px 0 0" }}>{dealer.company}</p>}
@@ -203,6 +253,9 @@ export default function DealersPage() {
                     {dealer.email && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Mail size={11} color="#787E87" /><span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{dealer.email}</span></div>}
                     {dealer.phone && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><Phone size={11} color="#787E87" /><span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{dealer.phone}</span></div>}
                     {dealer.city && <div style={{ display: "flex", alignItems: "center", gap: "6px" }}><MapPin size={11} color="#787E87" /><span style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif" }}>{dealer.city}{dealer.state ? `, ${dealer.state}` : ""}</span></div>}
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: (dealer as any).fulfillment_source === "drop_ship" ? "#6A9CC8" : "#5A9E5A", background: (dealer as any).fulfillment_source === "drop_ship" ? "rgba(106,156,200,0.1)" : "rgba(90,158,90,0.1)", padding: "2px 7px", alignSelf: "center" }}>
+                      {(dealer as any).fulfillment_source === "drop_ship" ? "Drop Ship" : "Domestic Stock"}
+                    </span>
                   </div>
                   <div style={{ flex: "0 0 120px", textAlign: "right" }}>
                     <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8B919A", margin: "0 0 2px" }}>{dealer.payment_terms?.replace("_", "/")}</p>
@@ -212,35 +265,101 @@ export default function DealersPage() {
                 </div>
 
                 {isExpanded && (
-                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", padding: "16px 20px", background: "#2B3038" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "16px" }}>
-                      {[
-                        { label: "Payment Terms", value: dealer.payment_terms?.replace("_", "/") },
-                        { label: "Credit Limit", value: dealer.credit_limit ? `$${dealer.credit_limit.toLocaleString()}` : "None" },
-                        { label: "Discount", value: dealer.discount_percent ? `${dealer.discount_percent}%` : "None" },
-                        { label: "Status", value: dealer.status },
-                      ].map(item => (
-                        <div key={item.label}>
-                          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>{item.label}</p>
-                          <p style={{ fontSize: "13px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{item.value || "—"}</p>
-                        </div>
+                  <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.08)", background: "#2B3038" }}>
+
+                    {/* Tabs */}
+                    <div style={{ display: "flex", borderBottom: "0.5px solid rgba(255,255,255,0.06)", padding: "0 20px" }}>
+                      {(["details", "catalog", "messages"] as const).map(t => (
+                        <button key={t} onClick={() => setActiveTab(prev => ({ ...prev, [dealer.id]: t }))}
+                          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "10px 16px", cursor: "pointer", border: "none", background: "transparent", color: tab === t ? "#fff" : "#8B919A", borderBottom: tab === t ? "2px solid #A91E22" : "2px solid transparent", marginBottom: "-1px" }}>
+                          {t === "details" ? "Details" : t === "catalog" ? `Catalog Access${accessLoaded[dealer.id] ? ` (${access.size})` : ""}` : "Messages"}
+                        </button>
                       ))}
                     </div>
-                    {dealer.address_line1 && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>Address</p>
-                        <p style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{dealer.address_line1}{dealer.address_line2 ? `, ${dealer.address_line2}` : ""}, {dealer.city}, {dealer.state} {dealer.zip}</p>
+
+                    {tab === "details" ? (
+                      <div style={{ padding: "16px 20px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "16px" }}>
+                          {[
+                            { label: "Payment Terms", value: dealer.payment_terms?.replace("_", "/") },
+                            { label: "Credit Limit", value: dealer.credit_limit ? `$${dealer.credit_limit.toLocaleString()}` : "None" },
+                            { label: "Discount", value: dealer.discount_percent ? `${dealer.discount_percent}%` : "None" },
+                            { label: "Status", value: dealer.status },
+                          ].map(item => (
+                            <div key={item.label}>
+                              <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>{item.label}</p>
+                              <p style={{ fontSize: "13px", color: "#E0E2E6", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{item.value || "—"}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {dealer.address_line1 && (
+                          <div style={{ marginBottom: "12px" }}>
+                            <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 4px" }}>Address</p>
+                            <p style={{ fontSize: "12px", color: "#B5BAC2", fontFamily: "'Barlow', sans-serif", margin: 0 }}>{dealer.address_line1}{dealer.address_line2 ? `, ${dealer.address_line2}` : ""}, {dealer.city}, {dealer.state} {dealer.zip}</p>
+                          </div>
+                        )}
+
+                        {/* Fulfillment source — determines whether orders backflush domestic inventory on ship */}
+                        <div style={{ background: "#262B32", border: "0.5px solid rgba(255,255,255,0.08)", padding: "12px 14px", marginBottom: "16px" }}>
+                          <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "9px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#787E87", margin: "0 0 8px" }}>Fulfillment Source</p>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <button onClick={() => toggleFulfillmentSource(dealer)}
+                              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: (dealer as any).fulfillment_source !== "drop_ship" ? "#fff" : "#8B919A", background: (dealer as any).fulfillment_source !== "drop_ship" ? "#5A9E5A" : "transparent", border: (dealer as any).fulfillment_source !== "drop_ship" ? "none" : "1px solid #666C75", padding: "6px 14px", cursor: "pointer" }}>
+                              Domestic Stock
+                            </button>
+                            <button onClick={() => toggleFulfillmentSource(dealer)}
+                              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: (dealer as any).fulfillment_source === "drop_ship" ? "#fff" : "#8B919A", background: (dealer as any).fulfillment_source === "drop_ship" ? "#6A9CC8" : "transparent", border: (dealer as any).fulfillment_source === "drop_ship" ? "none" : "1px solid #666C75", padding: "6px 14px", cursor: "pointer" }}>
+                              Drop Ship (Korea/Other)
+                            </button>
+                          </div>
+                          <p style={{ fontSize: "11px", color: "#666C75", fontFamily: "'Barlow', sans-serif", margin: "8px 0 0" }}>
+                            {(dealer as any).fulfillment_source === "drop_ship"
+                              ? "Orders for this dealer will NOT deduct domestic inventory when shipped."
+                              : "Orders for this dealer will backflush domestic component inventory when marked shipped."}
+                          </p>
+                        </div>
+
+                        {dealer.notes && <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", marginBottom: "16px", fontStyle: "italic" }}>Note: {dealer.notes}</p>}
+                        <div style={{ display: "flex", gap: "10px" }}>
+                          <button onClick={() => openEdit(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button onClick={() => setDeleteConfirm(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "1px solid rgba(169,30,34,0.3)", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
                       </div>
-                    )}
-                    {dealer.notes && <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", marginBottom: "16px", fontStyle: "italic" }}>Note: {dealer.notes}</p>}
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button onClick={() => openEdit(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#B5BAC2", background: "transparent", border: "1px solid #666C75", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Pencil size={12} /> Edit
-                      </button>
-                      <button onClick={() => setDeleteConfirm(dealer)} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#A91E22", background: "transparent", border: "1px solid rgba(169,30,34,0.3)", padding: "7px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
-                        <Trash2 size={12} /> Delete
-                      </button>
-                    </div>
+                    ) : tab === "catalog" ? (
+                      <div style={{ padding: "16px 20px" }}>
+                        <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "0 0 14px" }}>
+                          Only SKUs granted here appear in this dealer's order catalog in the portal.
+                        </p>
+                        {!accessLoaded[dealer.id] ? (
+                          <p style={{ fontSize: "12px", color: "#666C75", fontFamily: "'Barlow', sans-serif" }}>Loading catalog access...</p>
+                        ) : (
+                          <>
+                            <DealerSkuAccessPicker
+                              dealerId={dealer.id}
+                              selectedIds={access}
+                              onChange={ids => setAccessByDealer(prev => ({ ...prev, [dealer.id]: ids }))}
+                            />
+                            <button onClick={() => saveAccessForDealer(dealer.id)} disabled={accessSaving === dealer.id}
+                              style={{ marginTop: "14px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: accessSaving === dealer.id ? "#666C75" : "#A91E22", border: "none", padding: "10px 24px", cursor: accessSaving === dealer.id ? "not-allowed" : "pointer" }}>
+                              {accessSaving === dealer.id ? "Saving..." : "Save Catalog Access →"}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : tab === "messages" ? (
+                      <div style={{ padding: "16px 20px" }}>
+                        <p style={{ fontSize: "12px", color: "#8B919A", fontFamily: "'Barlow', sans-serif", margin: "0 0 14px" }}>
+                          General messages from {dealer.company || dealer.name}, not tied to a specific order. For order-specific questions, see the thread on that order in All Orders.
+                        </p>
+                        <div style={{ maxWidth: "560px" }}>
+                          <MessageThread dealerId={dealer.id} currentUserRole="admin" />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -264,7 +383,6 @@ export default function DealersPage() {
 
             <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
 
-              {/* Basic Info */}
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Basic Information</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -287,7 +405,6 @@ export default function DealersPage() {
                 </div>
               </div>
 
-              {/* Type + Status */}
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Account Type</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -306,7 +423,6 @@ export default function DealersPage() {
                 </div>
               </div>
 
-              {/* Address */}
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Address</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -339,7 +455,6 @@ export default function DealersPage() {
                 </div>
               </div>
 
-              {/* Payment Terms */}
               <div>
                 <p style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: "#8B919A", marginBottom: "12px" }}>Payment Terms</p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
@@ -367,7 +482,6 @@ export default function DealersPage() {
                 </div>
               </div>
 
-              {/* Notes */}
               <div>
                 <label style={labelStyle}>Notes</label>
                 <textarea style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} placeholder="Any additional notes..." value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} />
